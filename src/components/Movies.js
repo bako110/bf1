@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchMovies, createMovie, updateMovie, deleteMovie } from '../services/movieService';
+import { fetchMovies, createMovie, updateMovie, deleteMovie, uploadMovieImage } from '../services/movieService';
 import Drawer from './Drawer';
 
 export default function Movies() {
@@ -10,6 +10,7 @@ export default function Movies() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     loadMovies();
@@ -45,6 +46,22 @@ export default function Movies() {
       loadMovies();
     } catch (e) {
       setError('Erreur lors de la sauvegarde du film.');
+    }
+  }
+
+  async function handleImageSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setSuccess('');
+    setImageUploading(true);
+    try {
+      const result = await uploadMovieImage(file);
+      setForm((prev) => ({ ...prev, image_url: result.url }));
+    } catch (err) {
+      setError("Erreur lors de l'upload de l'image.");
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -120,13 +137,25 @@ export default function Movies() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">URL de l'image</label>
-              <input 
-                placeholder="https://..." 
-                value={form.image_url} 
-                onChange={e => setForm({ ...form, image_url: e.target.value })} 
+              <label className="block text-sm font-semibold text-black mb-2">Affiche</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
                 className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
               />
+              {imageUploading && (
+                <div className="text-xs text-gray-600 mt-2">Upload en cours...</div>
+              )}
+              {!!form.image_url && (
+                <div className="mt-3">
+                  <img
+                    src={form.image_url}
+                    alt=""
+                    className="h-24 w-24 object-cover border border-gray-300"
+                  />
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-black mb-2">Description</label>
@@ -152,6 +181,7 @@ export default function Movies() {
             <div className="flex gap-3 pt-4">
               <button 
                 type="submit" 
+                disabled={imageUploading}
                 className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
               >
                 {editId ? 'Modifier' : 'Créer'}
@@ -181,6 +211,7 @@ export default function Movies() {
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Titre</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Image</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Description</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Type</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
@@ -189,7 +220,7 @@ export default function Movies() {
               <tbody className="divide-y divide-gray-200">
                 {movies.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                       Aucun film
                     </td>
                   </tr>
@@ -197,6 +228,17 @@ export default function Movies() {
                   movies.map(m => (
                     <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-black">{m.title}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {m.image_url ? (
+                          <img
+                            src={m.image_url}
+                            alt=""
+                            className="h-10 w-10 object-cover border border-gray-300"
+                          />
+                        ) : (
+                          <span className="text-gray-500">N/A</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{m.description?.substring(0, 60) + '...' || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 text-xs font-semibold ${

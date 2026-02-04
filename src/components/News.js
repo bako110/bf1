@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchNews, createNews, updateNews, deleteNews } from '../services/newsService';
+import { fetchNews, createNews, updateNews, deleteNews, uploadNewsImage } from '../services/newsService';
 import Drawer from './Drawer';
 
 export default function News() {
@@ -10,6 +10,7 @@ export default function News() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => { loadNews(); }, []);
 
@@ -43,6 +44,22 @@ export default function News() {
       loadNews();
     } catch (e) {
       setError('Erreur lors de la sauvegarde de la news.');
+    }
+  }
+
+  async function handleImageSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setSuccess('');
+    setImageUploading(true);
+    try {
+      const result = await uploadNewsImage(file);
+      setForm((prev) => ({ ...prev, image_url: result.url }));
+    } catch (err) {
+      setError("Erreur lors de l'upload de l'image.");
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -108,13 +125,25 @@ export default function News() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">URL de l'image</label>
-              <input 
-                placeholder="https://..." 
-                value={form.image_url} 
-                onChange={e => setForm({ ...form, image_url: e.target.value })} 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" 
+              <label className="block text-sm font-semibold text-black mb-2">Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
               />
+              {imageUploading && (
+                <div className="text-xs text-gray-600 mt-2">Upload en cours...</div>
+              )}
+              {!!form.image_url && (
+                <div className="mt-3">
+                  <img
+                    src={form.image_url}
+                    alt="Aperçu"
+                    className="h-24 w-24 object-cover border border-gray-300"
+                  />
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-black mb-2">Contenu</label>
@@ -130,6 +159,7 @@ export default function News() {
             <div className="flex gap-3 pt-4">
               <button 
                 type="submit" 
+                disabled={imageUploading}
                 className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
               >
                 {editId ? 'Modifier' : 'Créer'}
@@ -160,6 +190,7 @@ export default function News() {
                 <tr className="bg-gray-100 border-b border-gray-300">
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Titre</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Auteur</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Image</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Contenu</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
                 </tr>
@@ -167,7 +198,7 @@ export default function News() {
               <tbody className="divide-y divide-gray-200">
                 {news.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                       Aucune news
                     </td>
                   </tr>
@@ -176,6 +207,17 @@ export default function News() {
                     <tr key={n.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-black">{n.title}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{n.author || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {n.image_url ? (
+                          <img
+                            src={n.image_url}
+                            alt="Aperçu"
+                            className="h-10 w-10 object-cover border border-gray-300"
+                          />
+                        ) : (
+                          <span className="text-gray-500">N/A</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{n.content?.substring(0, 60) + '...' || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm">
                         <button 

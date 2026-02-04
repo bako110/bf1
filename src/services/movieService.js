@@ -5,6 +5,15 @@ export async function fetchMovies() {
   return res.data;
 }
 
+export async function uploadMovieImage(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await api.post('/uploads/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
 export async function createMovie(movie) {
   const res = await api.post('/movies', movie);
   return res.data;

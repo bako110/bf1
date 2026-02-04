@@ -4,12 +4,12 @@ import { logoutAdmin } from '../services/authService';
 const sections = [
   { label: 'Dashboard', key: 'dashboard' },
   { label: 'Utilisateurs', key: 'users' },
-  { label: 'Messagerie', key: 'messages' },
   { label: 'News', key: 'news' },
   { label: 'Émissions', key: 'shows' },
   { label: 'Films', key: 'movies' },
   { label: 'Commentaires', key: 'comments' },
   { label: 'Abonnements', key: 'subscriptions' },
+  { label: 'Messagerie', key: 'messages' },
 ];
 
 export default function Sidebar({ currentSection, onSectionChange }) {
