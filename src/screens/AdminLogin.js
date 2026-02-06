@@ -85,7 +85,7 @@ export default function AdminLogin({ onLogin }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-3 px-4 font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-white text-black border border-black py-3 px-4 font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Connexion en cours...' : 'Se connecter'}
             </button>

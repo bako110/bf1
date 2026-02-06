@@ -6,7 +6,7 @@ export default function News() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', content: '', image_url: '', author: '' });
+  const [form, setForm] = useState({ title: '', category: '', description: '', image: '', author: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -38,7 +38,7 @@ export default function News() {
         await createNews(form);
         setSuccess('News créée avec succès.');
       }
-      setForm({ title: '', content: '', image_url: '', author: '' });
+      setForm({ title: '', category: '', description: '', image: '', author: '' });
       setEditId(null);
       setIsDrawerOpen(false);
       loadNews();
@@ -55,7 +55,7 @@ export default function News() {
     setImageUploading(true);
     try {
       const result = await uploadNewsImage(file);
-      setForm((prev) => ({ ...prev, image_url: result.url }));
+      setForm((prev) => ({ ...prev, image: result.url }));
     } catch (err) {
       setError("Erreur lors de l'upload de l'image.");
     } finally {
@@ -63,7 +63,8 @@ export default function News() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
+    const id = item.id || item._id;
     if (window.confirm('Supprimer cette news ?')) {
       try {
         await deleteNews(id);
@@ -76,7 +77,7 @@ export default function News() {
   }
 
   function handleEdit(n) {
-    setForm({ title: n.title, content: n.content || '', image_url: n.image_url || '', author: n.author || '' });
+    setForm({ title: n.title, category: n.category || '', description: n.description || '', image: n.image || '', author: n.author || '' });
     setEditId(n.id);
     setIsDrawerOpen(true);
   }
@@ -84,7 +85,7 @@ export default function News() {
   function handleCloseDrawer() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', content: '', image_url: '', author: '' });
+    setForm({ title: '', category: '', description: '', image: '', author: '' });
   }
 
   return (
@@ -116,11 +117,22 @@ export default function News() {
               />
             </div>
             <div>
+              <label className="block text-sm font-semibold text-black mb-2">Catégorie</label>
+              <input 
+                placeholder="Catégorie de la news" 
+                value={form.category} 
+                onChange={e => setForm({ ...form, category: e.target.value })} 
+                required 
+                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" 
+              />
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-black mb-2">Auteur</label>
               <input 
                 placeholder="Nom de l'auteur" 
                 value={form.author} 
                 onChange={e => setForm({ ...form, author: e.target.value })} 
+                required 
                 className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" 
               />
             </div>
@@ -135,10 +147,10 @@ export default function News() {
               {imageUploading && (
                 <div className="text-xs text-gray-600 mt-2">Upload en cours...</div>
               )}
-              {!!form.image_url && (
+              {!!form.image && (
                 <div className="mt-3">
                   <img
-                    src={form.image_url}
+                    src={form.image}
                     alt="Aperçu"
                     className="h-24 w-24 object-cover border border-gray-300"
                   />
@@ -146,11 +158,11 @@ export default function News() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">Contenu</label>
+              <label className="block text-sm font-semibold text-black mb-2">Description</label>
               <textarea 
-                placeholder="Contenu de la news" 
-                value={form.content} 
-                onChange={e => setForm({ ...form, content: e.target.value })} 
+                placeholder="Description de la news" 
+                value={form.description} 
+                onChange={e => setForm({ ...form, description: e.target.value })} 
                 required 
                 rows={6}
                 className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" 
@@ -189,9 +201,9 @@ export default function News() {
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Titre</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Catégorie</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Auteur</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Image</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Contenu</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -206,11 +218,12 @@ export default function News() {
                   news.map(n => (
                     <tr key={n.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-black">{n.title}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{n.category || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{n.author || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm">
-                        {n.image_url ? (
+                        {n.image ? (
                           <img
-                            src={n.image_url}
+                            src={n.image}
                             alt="Aperçu"
                             className="h-10 w-10 object-cover border border-gray-300"
                           />
@@ -218,7 +231,6 @@ export default function News() {
                           <span className="text-gray-500">N/A</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{n.content?.substring(0, 60) + '...' || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm">
                         <button 
                           onClick={() => handleEdit(n)} 
@@ -227,7 +239,7 @@ export default function News() {
                           Éditer
                         </button>
                         <button 
-                          onClick={() => handleDelete(n.id)} 
+                          onClick={() => handleDelete(n)} 
                           className="bg-black text-white px-4 py-2 text-xs font-semibold hover:bg-gray-800 transition-colors"
                         >
                           Supprimer

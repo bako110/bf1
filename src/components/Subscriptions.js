@@ -8,6 +8,13 @@ import {
   deleteSubscriptionPlan,
 } from '../services/subscriptionService';
 import Drawer from './Drawer';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
+import Button from './ui/Button';
+import FormInput from './ui/FormInput';
+import EmptyState from './ui/EmptyState';
 
 export default function Subscriptions() {
   const [subs, setSubs] = useState([]);
@@ -89,7 +96,8 @@ export default function Subscriptions() {
     }
   }
 
-  async function handleDeletePlan(id) {
+  async function handleDeletePlan(item) {
+    const id = item.id || item._id;
     if (window.confirm('Supprimer ce tarif ?')) {
       setError('');
       setSuccess('');
@@ -115,223 +123,180 @@ export default function Subscriptions() {
     }
   }
 
+  const planColumns = [
+    { key: 'name', label: 'Nom' },
+    { 
+      key: 'duration_months', 
+      label: 'Durée',
+      render: (val) => val + ' mois'
+    },
+    { 
+      key: 'price_cents', 
+      label: 'Prix',
+      render: (val, row) => val + ' ' + row.currency
+    },
+    { 
+      key: 'is_active', 
+      label: 'Statut',
+      render: (val) => val ? 'Actif' : 'Inactif'
+    }
+  ];
+
+  const planActions = [
+    { label: 'Modifier', onClick: openEditPlan, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
+    { label: 'Supprimer', onClick: handleDeletePlan, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+  ];
+
+  const subscriptionColumns = [
+    { key: 'user_id', label: 'Utilisateur' },
+    { key: 'email', label: 'Email' },
+    { 
+      key: 'is_active', 
+      label: 'Statut',
+      render: (val) => val ? 'Actif' : 'Inactif'
+    },
+    { 
+      key: 'start_date', 
+      label: 'Date début',
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : 'N/A'
+    },
+    { 
+      key: 'end_date', 
+      label: 'Date fin',
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : 'N/A'
+    }
+  ];
+
+  const subscriptionActions = [
+    { 
+      label: 'Annuler', 
+      onClick: (item) => item.is_active && handleCancel(item.id), 
+      className: 'text-red-600 hover:text-red-800 font-medium text-sm',
+      shouldShow: (item) => item.is_active
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-black mb-2">Gestion des Abonnements</h2>
-              <p className="text-gray-600">Gérer les abonnements des utilisateurs</p>
-            </div>
-            <button
+        <PageHeader 
+          title="Gestion des Abonnements"
+          description="Gérer les abonnements et tarifs des utilisateurs"
+          action={
+            <Button 
               onClick={openCreatePlan}
-              className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
+              variant="primary"
             >
               + Nouveau Tarif
-            </button>
-          </div>
-        </div>
+            </Button>
+          }
+        />
+
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
         <Drawer isOpen={isPlanDrawerOpen} onClose={closePlanDrawer} title={editingPlanId ? 'Modifier un Tarif' : 'Nouveau Tarif'}>
-          <form onSubmit={submitPlan} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Code</label>
-              <input
-                value={planForm.code}
-                onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })}
-                required
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
+          <form onSubmit={submitPlan} className="space-y-6">
+            <FormInput
+              label="Code"
+              placeholder="Code unique du tarif"
+              value={planForm.code}
+              onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })}
+              required
+            />
+            <FormInput
+              label="Nom"
+              placeholder="Nom du tarif"
+              value={planForm.name}
+              onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+              required
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Durée (mois)"
+                type="number"
+                min="1"
+                value={planForm.duration_months}
+                onChange={(e) => setPlanForm({ ...planForm, duration_months: Number(e.target.value) })}
+              />
+              <FormInput
+                label="Prix (centimes)"
+                type="number"
+                min="0"
+                value={planForm.price_cents}
+                onChange={(e) => setPlanForm({ ...planForm, price_cents: Number(e.target.value) })}
               />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Nom</label>
-              <input
-                value={planForm.name}
-                onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                required
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Devise"
+                value={planForm.currency}
+                onChange={(e) => setPlanForm({ ...planForm, currency: e.target.value.toUpperCase() })}
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-black mb-2">Durée (mois)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={planForm.duration_months}
-                  onChange={(e) => setPlanForm({ ...planForm, duration_months: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-black mb-2">Prix (centimes)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={planForm.price_cents}
-                  onChange={(e) => setPlanForm({ ...planForm, price_cents: Number(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-black mb-2">Devise</label>
-                <input
-                  value={planForm.currency}
-                  onChange={(e) => setPlanForm({ ...planForm, currency: e.target.value.toUpperCase() })}
-                  className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-                />
-              </div>
               <div className="flex items-end">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={planForm.is_active}
                     onChange={(e) => setPlanForm({ ...planForm, is_active: e.target.checked })}
-                    className="w-5 h-5 text-black rounded focus:ring-1 focus:ring-black"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-semibold text-black">Actif</span>
+                  <span className="text-sm font-medium text-gray-700">Actif</span>
                 </label>
               </div>
             </div>
-            <div className="flex gap-3 pt-4">
-              <button type="submit" className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors">
-                {editingPlanId ? 'Modifier' : 'Créer'}
-              </button>
-              <button type="button" onClick={closePlanDrawer} className="bg-gray-300 text-black px-6 py-3 font-semibold hover:bg-gray-400 transition-colors">
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" variant="primary" fullWidth>
+                {editingPlanId ? 'Mettre à jour' : 'Créer'}
+              </Button>
+              <Button type="button" variant="ghost" fullWidth onClick={closePlanDrawer}>
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Drawer>
 
-        <div className="bg-white border border-gray-300 overflow-hidden mb-10">
-          <div className="px-6 py-4 border-b border-gray-300 bg-gray-100">
-            <h3 className="text-lg font-bold text-black">Tarifs (1 mois, 3 mois, 1 an...)</h3>
-            <p className="text-sm text-gray-600">Définir les prix et la durée</p>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-100 border-b border-gray-300">
-                <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Nom</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Durée</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Prix</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {plans.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">Aucun tarif</td>
-                </tr>
-              ) : (
-                plans.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-black">{p.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{p.duration_months} mois</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{p.price_cents} {p.currency}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 text-xs font-semibold ${
-                        p.is_active ? 'bg-black text-white' : 'bg-gray-300 text-gray-700'
-                      }`}>
-                        {p.is_active ? 'Actif' : 'Inactif'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => openEditPlan(p)}
-                        className="bg-gray-700 text-white px-4 py-2 text-xs font-semibold mr-2 hover:bg-black transition-colors"
-                      >
-                        Éditer
-                      </button>
-                      <button
-                        onClick={() => handleDeletePlan(p.id)}
-                        className="bg-black text-white px-4 py-2 text-xs font-semibold hover:bg-gray-800 transition-colors"
-                      >
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Plans Section */}
+        <div className="mb-10">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tarifs (1 mois, 3 mois, 1 an...)</h3>
+          {plans.length === 0 ? (
+            <EmptyState 
+              icon="💰"
+              title="Aucun tarif"
+              message="Créez votre premier tarif pour le voir apparaître ici."
+            />
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <DataTable 
+                columns={planColumns}
+                data={plans}
+                actions={planActions}
+              />
+            </div>
+          )}
         </div>
 
-        {success && (
-          <div className="bg-gray-100 border-l-4 border-black p-4 mb-6 text-gray-800">
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="bg-gray-100 border-l-4 border-black p-4 mb-6 text-gray-800">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            <p className="text-gray-600 mt-4">Chargement...</p>
-          </div>
-        ) : (
-          <div className="bg-white border border-gray-300 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Utilisateur</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Date début</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Date fin</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {subs.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                      Aucun abonnement
-                    </td>
-                  </tr>
-                ) : (
-                  subs.map(s => (
-                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-black">{s.user_id || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{s.email || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 text-xs font-semibold ${
-                          s.is_active ? 'bg-black text-white' : 'bg-gray-300 text-gray-700'
-                        }`}>
-                          {s.is_active ? 'Actif' : 'Inactif'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {s.start_date ? new Date(s.start_date).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {s.end_date ? new Date(s.end_date).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        {s.is_active && (
-                          <button 
-                            onClick={() => handleCancel(s.id)} 
-                            className="bg-black text-white px-4 py-2 text-xs font-semibold hover:bg-gray-800 transition-colors"
-                          >
-                            Annuler
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* Subscriptions Section */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Abonnements des Utilisateurs</h3>
+          {loading ? (
+            <Loader size="lg" text="Chargement des abonnements..." />
+          ) : subs.length === 0 ? (
+            <EmptyState 
+              icon="📋"
+              title="Aucun abonnement"
+              message="Aucun abonnement en attente."
+            />
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <DataTable 
+                columns={subscriptionColumns}
+                data={subs}
+                actions={subscriptionActions}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

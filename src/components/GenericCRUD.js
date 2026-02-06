@@ -65,7 +65,8 @@ export default function GenericCRUD({
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
+    const id = item.id || item._id;
     setError('');
     setSuccess('');
     if (window.confirm(`Supprimer cet ${itemName} ?`)) {

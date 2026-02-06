@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { fetchLikes, deleteLike } from '../services/likeService';
+import { fetchLikes, removeLike } from '../services/likesService';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
+import EmptyState from './ui/EmptyState';
 
 export default function Likes() {
-  const [likes, setLikes] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     loadLikes();
@@ -12,65 +18,58 @@ export default function Likes() {
 
   async function loadLikes() {
     setLoading(true);
+    setError('');
     try {
       const data = await fetchLikes();
-      setLikes(data);
+      setItems(data);
     } catch (e) {
-      setError('Erreur chargement likes');
+      setError('Erreur lors du chargement.');
     }
     setLoading(false);
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
+    const id = item.id || item._id;
     if (window.confirm('Supprimer ce like ?')) {
-      await deleteLike(id);
-      loadLikes();
+      try {
+        await removeLike(id);
+        setSuccess('Like supprimé.');
+        loadLikes();
+      } catch (e) {
+        setError('Erreur lors de la suppression.');
+      }
     }
   }
 
+  const columns = [
+    { key: 'user_id', label: 'Utilisateur' },
+    { key: 'content_type', label: 'Type de contenu' },
+    { key: 'content_id', label: 'ID Contenu' },
+    { key: 'created_at', label: 'Date', render: (val) => new Date(val).toLocaleDateString('fr-FR') },
+  ];
+
+  const actions = [
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-black mb-6">Gestion des Likes</h2>
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 text-red-800">
-            {error}
-          </div>
-        )}
+      <div className="max-w-7xl mx-auto">
+        <PageHeader 
+          title="Gestion des Likes"
+          description="Afficher et gérer les likes utilisateurs"
+        />
+
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="text-4xl mb-4 animate-spin">●</div>
-            <p className="text-gray-600">Chargement...</p>
-          </div>
+          <Loader size="lg" text="Chargement des likes..." />
+        ) : items.length === 0 ? (
+          <EmptyState icon="❤️" title="Aucun like" message="Il n'y a pas encore de likes à afficher." />
         ) : (
-          <div className="bg-white border-2 border-gray-200 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-black text-white">
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Utilisateur</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Contenu ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {likes.map(l => (
-                  <tr key={l.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900">{l.username || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{l.content_type}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{l.content_id}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <button 
-                        onClick={() => handleDelete(l.id)} 
-                        className="bg-black text-white px-4 py-2 text-xs font-semibold uppercase hover:bg-gray-900 transition-colors"
-                      >
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <DataTable columns={columns} data={items} actions={actions} />
           </div>
         )}
       </div>

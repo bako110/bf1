@@ -20,7 +20,7 @@ export async function createNews(news) {
 }
 
 export async function updateNews(id, news) {
-  const res = await api.put(`/news/${id}`, news);
+  const res = await api.patch(`/news/${id}`, news);
   return res.data;
 }
 

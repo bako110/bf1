@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { fetchShows, createShow, updateShow, deleteShow } from '../services/showService';
 import Drawer from './Drawer';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
+import Button from './ui/Button';
+import FormInput from './ui/FormInput';
+import FormTextarea from './ui/FormTextarea';
+import EmptyState from './ui/EmptyState';
 
 export default function Shows() {
   const [shows, setShows] = useState([]);
@@ -48,7 +56,8 @@ export default function Shows() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
+    const id = item.id || item._id;
     setError('');
     setSuccess('');
     if (window.confirm('Supprimer cette émission ?')) {
@@ -82,173 +91,135 @@ export default function Shows() {
     setIsDrawerOpen(false);
     setEditId(null);
     setForm({ title: '', description: '', host: '', category: '', replay_url: '', live_url: '', is_live: false });
+    setError('');
   }
 
+  const columns = [
+    { key: 'title', label: 'Titre' },
+    { key: 'host', label: 'Animateur' },
+    { key: 'category', label: 'Catégorie' },
+    { 
+      key: 'is_live', 
+      label: 'Statut',
+      render: (val) => val ? 'En direct' : 'Replay'
+    }
+  ];
+
+  const actions = [
+    { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+  ];
+
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-black mb-2">Gestion des Émissions</h2>
-            <p className="text-gray-600">Gérer le catalogue d'émissions</p>
-          </div>
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
-          >
-            + Nouvelle Émission
-          </button>
-        </div>
+        <PageHeader 
+          title="Gestion des Émissions"
+          description="Créer et gérer le catalogue d'émissions"
+          action={
+            <Button 
+              onClick={() => setIsDrawerOpen(true)}
+              variant="primary"
+            >
+              + Nouvelle Émission
+            </Button>
+          }
+        />
+
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? 'Modifier l\'Émission' : 'Nouvelle Émission'}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Titre</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <FormInput
+              label="Titre"
+              placeholder="Titre de l'émission"
+              value={form.title}
+              onChange={e => setForm({...form, title: e.target.value})}
+              required
+            />
+            <FormInput
+              label="Animateur"
+              placeholder="Nom de l'animateur"
+              value={form.host}
+              onChange={e => setForm({...form, host: e.target.value})}
+            />
+            <FormInput
+              label="Catégorie"
+              placeholder="Catégorie"
+              value={form.category}
+              onChange={e => setForm({...form, category: e.target.value})}
+            />
+            <FormInput
+              label="URL du replay"
+              placeholder="https://exemple.com"
+              value={form.replay_url}
+              onChange={e => setForm({...form, replay_url: e.target.value})}
+              type="url"
+            />
+            <FormInput
+              label="URL du live"
+              placeholder="https://exemple.com"
+              value={form.live_url}
+              onChange={e => setForm({...form, live_url: e.target.value})}
+              type="url"
+            />
+            <FormTextarea
+              label="Description"
+              placeholder="Description de l'émission..."
+              value={form.description}
+              onChange={e => setForm({...form, description: e.target.value})}
+              rows={6}
+            />
+            <div className="flex items-center gap-2">
               <input 
-                placeholder="Titre de l'émission" 
-                value={form.title} 
-                onChange={e => setForm({ ...form, title: e.target.value })} 
-                required 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
+                type="checkbox" 
+                id="is_live"
+                checked={form.is_live} 
+                onChange={e => setForm({...form, is_live: e.target.checked})} 
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
+              <label htmlFor="is_live" className="text-sm font-medium text-gray-700">En direct</label>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Animateur</label>
-              <input 
-                placeholder="Nom de l'animateur" 
-                value={form.host} 
-                onChange={e => setForm({ ...form, host: e.target.value })} 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Catégorie</label>
-              <input 
-                placeholder="Catégorie" 
-                value={form.category} 
-                onChange={e => setForm({ ...form, category: e.target.value })} 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">URL du replay</label>
-              <input 
-                placeholder="https://..." 
-                value={form.replay_url} 
-                onChange={e => setForm({ ...form, replay_url: e.target.value })} 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">URL du live</label>
-              <input 
-                placeholder="https://..." 
-                value={form.live_url} 
-                onChange={e => setForm({ ...form, live_url: e.target.value })} 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Description</label>
-              <textarea 
-                placeholder="Description de l'émission" 
-                value={form.description} 
-                onChange={e => setForm({ ...form, description: e.target.value })} 
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={form.is_live} 
-                  onChange={e => setForm({ ...form, is_live: e.target.checked })} 
-                  className="w-5 h-5 text-black rounded focus:ring-1 focus:ring-black"
-                />
-                <span className="text-sm font-semibold text-black">En direct</span>
-              </label>
-            </div>
-            <div className="flex gap-3 pt-4">
-              <button 
-                type="submit" 
-                className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
+            <div className="flex gap-3 pt-2">
+              <Button 
+                type="submit"
+                variant="primary"
+                fullWidth
               >
-                {editId ? 'Modifier' : 'Créer'}
-              </button>
-              <button 
-                type="button" 
+                {editId ? 'Mettre à jour' : 'Créer'}
+              </Button>
+              <Button 
+                type="button"
+                variant="ghost"
+                fullWidth
                 onClick={handleCloseDrawer}
-                className="bg-gray-300 text-black px-6 py-3 font-semibold hover:bg-gray-400 transition-colors"
               >
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Drawer>
 
-        {success && <div className="bg-gray-100 border-l-4 border-black p-4 mb-6 text-gray-800">{success}</div>}
-        {error && <div className="bg-gray-100 border-l-4 border-black p-4 mb-6 text-gray-800">{error}</div>}
-
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            <p className="text-gray-600 mt-4">Chargement...</p>
-          </div>
+          <Loader size="lg" text="Chargement des émissions..." />
+        ) : shows.length === 0 ? (
+          <EmptyState 
+            icon="📺"
+            title="Aucune émission"
+            message="Créez votre première émission pour la voir apparaître ici."
+          />
         ) : (
-          <div className="bg-white border border-gray-300 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Titre</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Animateur</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Catégorie</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {shows.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                      Aucune émission
-                    </td>
-                  </tr>
-                ) : (
-                  shows.map(s => (
-                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-black">{s.title}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{s.host || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{s.category || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 text-xs font-semibold ${
-                          s.is_live ? 'bg-black text-white' : 'bg-gray-300 text-gray-700'
-                        }`}>
-                          {s.is_live ? 'En direct' : 'Replay'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <button 
-                          onClick={() => handleEdit(s)} 
-                          className="bg-gray-700 text-white px-4 py-2 text-xs font-semibold mr-2 hover:bg-black transition-colors"
-                        >
-                          Éditer
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(s.id)} 
-                          className="bg-black text-white px-4 py-2 text-xs font-semibold hover:bg-gray-800 transition-colors"
-                        >
-                          Supprimer
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <DataTable 
+              columns={columns}
+              data={shows}
+              actions={actions}
+            />
           </div>
         )}
       </div>
     </div>
   );
 }
+

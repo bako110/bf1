@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { fetchFavorites, deleteFavorite } from '../services/favoriteService';
+import { fetchFavorites, removeFavorite } from '../services/favoritesService';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
+import EmptyState from './ui/EmptyState';
 
 export default function Favorites() {
-  const [favorites, setFavorites] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     loadFavorites();
@@ -12,48 +18,60 @@ export default function Favorites() {
 
   async function loadFavorites() {
     setLoading(true);
+    setError('');
     try {
       const data = await fetchFavorites();
-      setFavorites(data);
+      setItems(data);
     } catch (e) {
-      setError('Erreur chargement favoris');
+      setError('Erreur lors du chargement.');
     }
     setLoading(false);
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
+    const id = item.id || item._id;
     if (window.confirm('Supprimer ce favori ?')) {
-      await deleteFavorite(id);
-      loadFavorites();
+      try {
+        await removeFavorite(id);
+        setSuccess('Favori supprimé.');
+        loadFavorites();
+      } catch (e) {
+        setError('Erreur lors de la suppression.');
+      }
     }
   }
 
+  const columns = [
+    { key: 'user_id', label: 'Utilisateur' },
+    { key: 'content_type', label: 'Type de contenu' },
+    { key: 'content_id', label: 'ID Contenu' },
+  ];
+
+  const actions = [
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+  ];
+
   return (
-    <div>
-      <h2>Gestion des favoris</h2>
-      {loading ? <div>Chargement...</div> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Contenu</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {favorites.map(f => (
-              <tr key={f.id}>
-                <td>{f.user?.username || 'N/A'}</td>
-                <td>{f.content_type} - {f.content_id}</td>
-                <td>
-                  <button onClick={() => handleDelete(f.id)}>Supprimer</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        <PageHeader 
+          title="Gestion des Favoris"
+          description="Afficher et gérer les favoris utilisateurs"
+        />
+
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {loading ? (
+          <Loader size="lg" text="Chargement des favoris..." />
+        ) : items.length === 0 ? (
+          <EmptyState icon="⭐" title="Aucun favori" message="Il n'y a pas encore de favoris à afficher." />
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <DataTable columns={columns} data={items} actions={actions} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

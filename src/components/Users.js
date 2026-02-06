@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../services/userService';
 import Drawer from './Drawer';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
+import Button from './ui/Button';
+import FormInput from './ui/FormInput';
+import EmptyState from './ui/EmptyState';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -48,7 +55,8 @@ export default function Users() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
+    const id = item.id || item._id;
     setError('');
     setSuccess('');
     if (window.confirm('Supprimer cet utilisateur ?')) {
@@ -74,141 +82,109 @@ export default function Users() {
     setIsDrawerOpen(false);
     setEditId(null);
     setForm({ username: '', email: '', password: '' });
+    setError('');
   }
 
+  const columns = [
+    { key: 'username', label: 'Nom' },
+    { key: 'email', label: 'Email' },
+    { 
+      key: 'is_premium', 
+      label: 'Statut',
+      render: (val) => val ? 'Premium' : 'Standard'
+    }
+  ];
+
+  const actions = [
+    { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+  ];
+
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-black mb-2">Gestion des Utilisateurs</h2>
-            <p className="text-gray-600">Gérer les comptes utilisateurs de la plateforme</p>
-          </div>
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
-          >
-            + Nouvel Utilisateur
-          </button>
-        </div>
+        <PageHeader 
+          title="Gestion des Utilisateurs"
+          description="Créer et gérer les comptes utilisateurs de la plateforme"
+          action={
+            <Button 
+              onClick={() => setIsDrawerOpen(true)}
+              variant="primary"
+            >
+              + Nouvel Utilisateur
+            </Button>
+          }
+        />
+
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? 'Modifier l\'Utilisateur' : 'Nouvel Utilisateur'}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Nom d'utilisateur</label>
-              <input 
-                placeholder="Nom d'utilisateur" 
-                value={form.username} 
-                onChange={e => setForm({ ...form, username: e.target.value })} 
-                required 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Email</label>
-              <input 
-                placeholder="email@example.com" 
-                type="email" 
-                value={form.email} 
-                onChange={e => setForm({ ...form, email: e.target.value })} 
-                required 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-black mb-2">Mot de passe {!editId && <span className="text-gray-500">(min. 6 caractères)</span>}</label>
-              <input 
-                placeholder="••••••••" 
-                type="password" 
-                value={form.password} 
-                onChange={e => setForm({ ...form, password: e.target.value })} 
-                required={!editId} 
-                minLength={6} 
-                className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
-              />
-              {editId && <p className="text-xs text-gray-500 mt-1">Laissez vide pour ne pas changer</p>}
-            </div>
-            <div className="flex gap-3 pt-4">
-              <button 
-                type="submit" 
-                className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <FormInput
+              label="Nom d'utilisateur"
+              placeholder="Nom d'utilisateur"
+              value={form.username}
+              onChange={e => setForm({...form, username: e.target.value})}
+              required
+            />
+            <FormInput
+              label="Email"
+              placeholder="email@example.com"
+              type="email"
+              value={form.email}
+              onChange={e => setForm({...form, email: e.target.value})}
+              required
+            />
+            <FormInput
+              label="Mot de passe"
+              placeholder="••••••••"
+              type="password"
+              value={form.password}
+              onChange={e => setForm({...form, password: e.target.value})}
+              required={!editId}
+              minLength={6}
+              helperText={editId ? 'Laissez vide pour ne pas changer' : 'Minimum 6 caractères'}
+            />
+            <div className="flex gap-3 pt-2">
+              <Button 
+                type="submit"
+                variant="primary"
+                fullWidth
               >
-                {editId ? 'Modifier' : 'Créer'}
-              </button>
-              <button 
-                type="button" 
+                {editId ? 'Mettre à jour' : 'Créer'}
+              </Button>
+              <Button 
+                type="button"
+                variant="ghost"
+                fullWidth
                 onClick={handleCloseDrawer}
-                className="bg-gray-300 text-black px-6 py-3 font-semibold hover:bg-gray-400 transition-colors"
               >
                 Annuler
-              </button>
+              </Button>
             </div>
           </form>
         </Drawer>
 
-        {success && <div className="bg-gray-100 border-l-4 border-black p-4 mb-6 text-gray-800">{success}</div>}
-        {error && <div className="bg-gray-100 border-l-4 border-black p-4 mb-6 text-gray-800">{error}</div>}
-
-
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            <p className="text-gray-600 mt-4">Chargement...</p>
-          </div>
+          <Loader size="lg" text="Chargement des utilisateurs..." />
+        ) : users.length === 0 ? (
+          <EmptyState 
+            icon="👥"
+            title="Aucun utilisateur"
+            message="Créez votre premier utilisateur pour le voir apparaître ici."
+          />
         ) : (
-          <div className="bg-white border border-gray-300 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Nom</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Téléphone</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                      Aucun utilisateur
-                    </td>
-                  </tr>
-                ) : (
-                  users.map(u => (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-black">{u.username}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{u.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{u.phone || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-3 py-1 text-xs font-semibold ${
-                          u.is_premium ? 'bg-black text-white' : 'bg-gray-300 text-gray-700'
-                        }`}>
-                          {u.is_premium ? 'Premium' : 'Standard'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <button 
-                          onClick={() => handleEdit(u)} 
-                          className="bg-gray-700 text-white px-4 py-2 text-xs font-semibold mr-2 hover:bg-black transition-colors"
-                        >
-                          Éditer
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(u.id)} 
-                          className="bg-black text-white px-4 py-2 text-xs font-semibold hover:bg-gray-800 transition-colors"
-                        >
-                          Supprimer
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <DataTable 
+              columns={columns}
+              data={users}
+              actions={actions}
+            />
           </div>
         )}
       </div>
     </div>
   );
 }
+

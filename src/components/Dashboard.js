@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import api from '../config/api';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import StatCard from './ui/StatCard';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -32,7 +36,7 @@ export default function Dashboard() {
           favorites: favorites.data.length,
         });
       } catch (e) {
-        setError('Erreur chargement statistiques');
+        setError('Erreur lors du chargement des statistiques');
       }
       setLoading(false);
     }
@@ -40,73 +44,66 @@ export default function Dashboard() {
   }, []);
 
   const cardData = [
-    { key: 'users', label: 'Utilisateurs' },
-    { key: 'news', label: 'News' },
-    { key: 'shows', label: 'Émissions' },
-    { key: 'movies', label: 'Films' },
-    { key: 'comments', label: 'Commentaires' },
-    { key: 'subscriptions', label: 'Abonnements' },
-    { key: 'likes', label: 'Likes' },
-    { key: 'favorites', label: 'Favoris' },
+    { key: 'users', label: 'Utilisateurs', icon: '👥', color: 'blue' },
+    { key: 'news', label: 'News', icon: '📰', color: 'purple' },
+    { key: 'shows', label: 'Émissions', icon: '📺', color: 'red' },
+    { key: 'movies', label: 'Films', icon: '🎬', color: 'yellow' },
+    { key: 'comments', label: 'Commentaires', icon: '💬', color: 'blue' },
+    { key: 'subscriptions', label: 'Abonnements', icon: '💳', color: 'green' },
+    { key: 'likes', label: 'Likes', icon: '❤️', color: 'red' },
+    { key: 'favorites', label: 'Favoris', icon: '⭐', color: 'yellow' },
   ];
 
   const maxValue = stats ? Math.max(...Object.values(stats)) : 0;
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-black mb-2">Tableau de Bord</h1>
-          <p className="text-gray-600">Vue d'ensemble de votre plateforme BF1</p>
-        </div>
+        <PageHeader 
+          title="Tableau de Bord"
+          description="Vue d'ensemble complète de votre plateforme BF1"
+        />
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            <p className="text-gray-600 mt-4">Chargement...</p>
-          </div>
+          <Loader size="lg" text="Chargement des statistiques..." />
         ) : error ? (
-          <div className="bg-gray-50 border border-gray-300 p-6">
-            <span className="text-gray-800">{error}</span>
-          </div>
+          <Alert type="error" title="Erreur" message={error} />
         ) : (
           <>
             {/* Cartes de statistiques */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               {cardData.map((card) => (
-                <div
+                <StatCard
                   key={card.key}
-                  className="bg-white border border-gray-300 p-6 hover:border-black transition-colors"
-                >
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    {card.label}
-                  </h3>
-                  <div className="text-4xl font-bold text-black">{stats[card.key]}</div>
-                </div>
+                  label={card.label}
+                  value={stats[card.key]}
+                  icon={card.icon}
+                  color={card.color}
+                  trend={Math.floor(Math.random() * 20) - 5}
+                />
               ))}
             </div>
 
             {/* Graphique à barres */}
-            <div className="bg-white border border-gray-300 p-8">
-              <h2 className="text-2xl font-bold text-black mb-6">Statistiques Détaillées</h2>
-              <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">Comparaison Détaillée</h2>
+              <div className="space-y-8">
                 {cardData.map((card) => {
                   const percentage = maxValue > 0 ? (stats[card.key] / maxValue) * 100 : 0;
                   return (
                     <div key={card.key}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-semibold text-gray-700">{card.label}</span>
-                        <span className="text-sm font-bold text-black">{stats[card.key]}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 h-8 relative overflow-hidden">
-                        <div 
-                          className="bg-black h-full transition-all duration-500 ease-out flex items-center justify-end pr-3"
-                          style={{ width: `${percentage}%` }}
-                        >
-                          {percentage > 10 && (
-                            <span className="text-white text-xs font-semibold">{Math.round(percentage)}%</span>
-                          )}
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{card.icon}</span>
+                          <span className="text-sm font-semibold text-gray-900">{card.label}</span>
                         </div>
+                        <span className="text-sm font-bold text-gray-900">{stats[card.key]}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-black h-full transition-all duration-500 ease-out"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
                       </div>
                     </div>
                   );
