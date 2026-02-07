@@ -9,20 +9,49 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload';
 
 export default function Reels() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', video_url: '', thumbnail_url: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ 
+    video_url: '', 
+    title: '', 
+    username: '', 
+    description: '', 
+    likes: 0, 
+    comments: 0, 
+    shares: 0 
+  });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const columns = [
     { key: 'title', label: 'Titre' },
-    { key: 'user_id', label: 'Créateur' },
-    { key: 'created_at', label: 'Date', render: (val) => new Date(val).toLocaleDateString('fr-FR') },
+    { key: 'username', label: 'Créateur' },
+    { 
+      key: 'likes', 
+      label: 'Likes',
+      render: (val) => `❤️ ${val || 0}`
+    },
+    { 
+      key: 'comments', 
+      label: 'Commentaires',
+      render: (val) => `💬 ${val || 0}`
+    },
+    { 
+      key: 'shares', 
+      label: 'Partages',
+      render: (val) => `🔁 ${val || 0}`
+    },
+    { 
+      key: 'created_at', 
+      label: 'Date', 
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : '-'
+    },
   ];
 
   const actions = [
@@ -50,6 +79,7 @@ export default function Reels() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSubmitting(true);
     try {
       if (editId) {
         await updateReel(editId, form);
@@ -61,7 +91,9 @@ export default function Reels() {
       handleClose();
       loadReels();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde.');
+      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -79,7 +111,15 @@ export default function Reels() {
   }
 
   function handleEdit(item) {
-    setForm(item);
+    setForm({
+      video_url: item.video_url || '',
+      title: item.title || '',
+      username: item.username || '',
+      description: item.description || '',
+      likes: item.likes || 0,
+      comments: item.comments || 0,
+      shares: item.shares || 0
+    });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
   }
@@ -87,7 +127,15 @@ export default function Reels() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', description: '', video_url: '', thumbnail_url: '' });
+    setForm({ 
+      video_url: '', 
+      title: '', 
+      username: '', 
+      description: '', 
+      likes: 0, 
+      comments: 0, 
+      shares: 0 
+    });
     setError('');
   }
 
@@ -110,15 +158,105 @@ export default function Reels() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Reel' : 'Nouveau Reel'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier le Reel' : '➕ Nouveau Reel'}>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <FormInput label="Titre" placeholder="Titre du reel" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-            <FormTextarea label="Description" placeholder="Description..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} />
-            <FormInput label="URL Vidéo" placeholder="https://..." value={form.video_url} onChange={e => setForm({...form, video_url: e.target.value})} type="url" />
-            <FormInput label="URL Vignette" placeholder="https://..." value={form.thumbnail_url} onChange={e => setForm({...form, thumbnail_url: e.target.value})} type="url" />
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" variant="primary" fullWidth>{editId ? 'Mettre à jour' : 'Créer'}</Button>
-              <Button type="button" variant="ghost" fullWidth onClick={handleClose}>Annuler</Button>
+            <div className="bg-pink-50 border-l-4 border-pink-500 p-4 mb-6">
+              <p className="text-sm text-pink-800">
+                <strong>💡 Astuce :</strong> Créez des reels courts et engageants pour votre audience.
+              </p>
+            </div>
+
+            <FormInput
+              label="Titre du Reel"
+              placeholder="Mon super reel"
+              value={form.title}
+              onChange={e => setForm({...form, title: e.target.value})}
+              required
+            />
+
+            <FormInput
+              label="Nom du Créateur"
+              placeholder="@username"
+              value={form.username}
+              onChange={e => setForm({...form, username: e.target.value})}
+              required
+            />
+
+            <FormInput
+              label="URL de la Vidéo"
+              placeholder="https://exemple.com/video.mp4"
+              type="url"
+              value={form.video_url}
+              onChange={e => setForm({...form, video_url: e.target.value})}
+              required
+            />
+
+            <FormTextarea
+              label="Description"
+              placeholder="Description du reel..."
+              value={form.description}
+              onChange={e => setForm({...form, description: e.target.value})}
+              rows={4}
+              required
+            />
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormInput
+                label="Likes"
+                type="number"
+                placeholder="0"
+                value={form.likes}
+                onChange={e => setForm({...form, likes: parseInt(e.target.value) || 0})}
+                min="0"
+              />
+
+              <FormInput
+                label="Commentaires"
+                type="number"
+                placeholder="0"
+                value={form.comments}
+                onChange={e => setForm({...form, comments: parseInt(e.target.value) || 0})}
+                min="0"
+              />
+
+              <FormInput
+                label="Partages"
+                type="number"
+                placeholder="0"
+                value={form.shares}
+                onChange={e => setForm({...form, shares: parseInt(e.target.value) || 0})}
+                min="0"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <Button 
+                type="submit" 
+                variant="primary" 
+                fullWidth
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enregistrement...
+                  </span>
+                ) : (
+                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                fullWidth 
+                onClick={handleClose}
+                disabled={submitting}
+              >
+                ❌ Annuler
+              </Button>
             </div>
           </form>
         </Drawer>

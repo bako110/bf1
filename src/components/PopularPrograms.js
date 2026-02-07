@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPopularPrograms, createPopularProgram, updatePopularProgram, deletePopularProgram } from '../services/popularProgramsService';
 import Drawer from './Drawer';
+import ImageUpload from './ui/ImageUpload';
 
 export default function PopularPrograms() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '' });
+  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, rating: 0, image: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -39,7 +40,7 @@ export default function PopularPrograms() {
         await createPopularProgram(form);
         setSuccess('Programme créé avec succès.');
       }
-      setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '' });
+      setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, rating: 0, image: '' });
       setEditId(null);
       setIsDrawerOpen(false);
       loadPrograms();
@@ -72,6 +73,7 @@ export default function PopularPrograms() {
       category: item.category || '',
       schedule: item.schedule || '',
       episodes: item.episodes || 0,
+      rating: item.rating || 0,
       image: item.image || ''
     });
     setEditId(item.id);
@@ -99,7 +101,12 @@ export default function PopularPrograms() {
             <input placeholder="Horaire (ex: 20:00)" value={form.schedule} onChange={e => setForm({...form, schedule: e.target.value})} required className="w-full px-4 py-2 border border-gray-300" />
             <input placeholder="Nombre d'épisodes" type="number" value={form.episodes} onChange={e => setForm({...form, episodes: parseInt(e.target.value) || 0})} required min="0" className="w-full px-4 py-2 border border-gray-300" />
             <input placeholder="Catégorie" value={form.category} onChange={e => setForm({...form, category: e.target.value})} required className="w-full px-4 py-2 border border-gray-300" />
-            <input placeholder="URL de l'image" type="url" value={form.image} onChange={e => setForm({...form, image: e.target.value})} className="w-full px-4 py-2 border border-gray-300" />
+            <ImageUpload
+              label="Image du Programme"
+              value={form.image}
+              onChange={(url) => setForm({...form, image: url})}
+              helperText="Sélectionnez une image pour le programme"
+            />
             <p className="text-sm text-gray-500">Note: La note est générée automatiquement par les utilisateurs</p>
             <button type="submit" className="w-full bg-black text-white py-2 font-semibold">Enregistrer</button>
           </form>

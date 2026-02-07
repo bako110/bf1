@@ -44,9 +44,39 @@ export default function Comments() {
   }
 
   const columns = [
-    { key: 'author', label: 'Auteur', render: (val) => val || 'Anonyme' },
-    { key: 'text', label: 'Texte', render: (val, row) => (val || row.content || '').substring(0, 50) + '...' },
-    { key: 'content_type', label: 'Type' },
+    { 
+      key: 'user_id', 
+      label: 'Utilisateur',
+      render: (val) => val ? `Utilisateur ${val.substring(0, 8)}...` : 'Anonyme'
+    },
+    { 
+      key: 'text', 
+      label: 'Commentaire', 
+      render: (val) => val ? (val.length > 80 ? val.substring(0, 80) + '...' : val) : '-'
+    },
+    { 
+      key: 'content_type', 
+      label: 'Type de Contenu',
+      render: (val) => {
+        const types = {
+          'movie': 'Film',
+          'show': 'Émission',
+          'replay': 'Replay',
+          'reel': 'Reel'
+        };
+        return types[val] || val;
+      }
+    },
+    { 
+      key: 'is_hidden', 
+      label: 'Statut',
+      render: (val) => val ? '❌ Masqué' : '✅ Visible'
+    },
+    { 
+      key: 'created_at', 
+      label: 'Date',
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : '-'
+    },
   ];
 
   const actions = [

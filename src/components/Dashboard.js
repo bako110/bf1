@@ -15,28 +15,31 @@ export default function Dashboard() {
       setLoading(true);
       setError('');
       try {
-        const [users, news, shows, movies, comments, subscriptions, likes, favorites] = await Promise.all([
-          api.get('/users'),
-          api.get('/news'),
-          api.get('/shows'),
-          api.get('/movies'),
-          api.get('/comments'),
-          api.get('/subscriptions'),
-          api.get('/likes'),
-          api.get('/favorites'),
-        ]);
-        setStats({
-          users: users.data.length,
-          news: news.data.length,
-          shows: shows.data.length,
-          movies: movies.data.length,
-          comments: comments.data.length,
-          subscriptions: subscriptions.data.length,
-          likes: likes.data.length,
-          favorites: favorites.data.length,
-        });
+        const response = await api.get('/stats/dashboard');
+        setStats(response.data);
       } catch (e) {
-        setError('Erreur lors du chargement des statistiques');
+        console.error('Dashboard error:', e);
+        console.error('Error response:', e.response);
+        const errorMsg = e.response?.data?.detail || e.message || 'Erreur lors du chargement des statistiques';
+        setError(`Erreur: ${errorMsg}`);
+        
+        // Fallback avec des valeurs par défaut
+        setStats({
+          users: { total: 0, growth: 0 },
+          shows: { total: 0, growth: 0 },
+          movies: { total: 0, growth: 0 },
+          replays: { total: 0, growth: 0 },
+          reels: { total: 0, growth: 0 },
+          interviews: { total: 0, growth: 0 },
+          programs: { total: 0, growth: 0 },
+          news: { total: 0, growth: 0 },
+          trendingShows: { total: 0, growth: 0 },
+          popularPrograms: { total: 0, growth: 0 },
+          subscriptions: { total: 0, growth: 0 },
+          comments: { total: 0, growth: 0 },
+          likes: { total: 0, growth: 0 },
+          favorites: { total: 0, growth: 0 },
+        });
       }
       setLoading(false);
     }
@@ -44,17 +47,23 @@ export default function Dashboard() {
   }, []);
 
   const cardData = [
-    { key: 'users', label: 'Utilisateurs', icon: '👥', color: 'blue' },
-    { key: 'news', label: 'News', icon: '📰', color: 'purple' },
-    { key: 'shows', label: 'Émissions', icon: '📺', color: 'red' },
-    { key: 'movies', label: 'Films', icon: '🎬', color: 'yellow' },
-    { key: 'comments', label: 'Commentaires', icon: '💬', color: 'blue' },
-    { key: 'subscriptions', label: 'Abonnements', icon: '💳', color: 'green' },
-    { key: 'likes', label: 'Likes', icon: '❤️', color: 'red' },
-    { key: 'favorites', label: 'Favoris', icon: '⭐', color: 'yellow' },
+    { key: 'users', label: 'Utilisateurs', color: 'blue' },
+    { key: 'shows', label: 'Émissions', color: 'red' },
+    { key: 'movies', label: 'Films', color: 'purple' },
+    { key: 'replays', label: 'Replays', color: 'indigo' },
+    { key: 'reels', label: 'Reels', color: 'pink' },
+    { key: 'interviews', label: 'Interviews', color: 'orange' },
+    { key: 'programs', label: 'Programmes EPG', color: 'teal' },
+    { key: 'news', label: 'Breaking News', color: 'red' },
+    { key: 'trendingShows', label: 'Émissions Tendances', color: 'yellow' },
+    { key: 'popularPrograms', label: 'Programmes Populaires', color: 'green' },
+    { key: 'subscriptions', label: 'Abonnements', color: 'green' },
+    { key: 'comments', label: 'Commentaires', color: 'blue' },
+    { key: 'likes', label: 'Likes', color: 'red' },
+    { key: 'favorites', label: 'Favoris', color: 'yellow' },
   ];
 
-  const maxValue = stats ? Math.max(...Object.values(stats)) : 0;
+  const maxValue = stats ? Math.max(...Object.values(stats).map(s => s.total)) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -76,10 +85,9 @@ export default function Dashboard() {
                 <StatCard
                   key={card.key}
                   label={card.label}
-                  value={stats[card.key]}
-                  icon={card.icon}
+                  value={stats[card.key]?.total || 0}
                   color={card.color}
-                  trend={Math.floor(Math.random() * 20) - 5}
+                  trend={stats[card.key]?.growth}
                 />
               ))}
             </div>
@@ -89,15 +97,14 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-gray-900 mb-8">Comparaison Détaillée</h2>
               <div className="space-y-8">
                 {cardData.map((card) => {
-                  const percentage = maxValue > 0 ? (stats[card.key] / maxValue) * 100 : 0;
+                  const percentage = maxValue > 0 ? ((stats[card.key]?.total || 0) / maxValue) * 100 : 0;
                   return (
                     <div key={card.key}>
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{card.icon}</span>
                           <span className="text-sm font-semibold text-gray-900">{card.label}</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-900">{stats[card.key]}</span>
+                        <span className="text-sm font-bold text-gray-900">{stats[card.key]?.total || 0}</span>
                       </div>
                       <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
                         <div 

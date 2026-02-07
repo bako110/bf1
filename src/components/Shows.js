@@ -9,12 +9,25 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload';
 
 export default function Shows() {
   const [shows, setShows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', host: '', category: '', replay_url: '', live_url: '', is_live: false });
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ 
+    title: '', 
+    description: '', 
+    host: '', 
+    category: '', 
+    image_url: '',
+    live_url: '',
+    replay_url: '',
+    duration: '',
+    is_live: false,
+    views_count: 0
+  });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -39,6 +52,7 @@ export default function Shows() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSubmitting(true);
     try {
       if (editId) {
         await updateShow(editId, form);
@@ -47,12 +61,25 @@ export default function Shows() {
         await createShow(form);
         setSuccess('Émission créée avec succès.');
       }
-      setForm({ title: '', description: '', host: '', category: '', replay_url: '', live_url: '', is_live: false });
+      setForm({ 
+        title: '', 
+        description: '', 
+        host: '', 
+        category: '', 
+        image_url: '',
+        live_url: '',
+        replay_url: '',
+        duration: '',
+        is_live: false,
+        views_count: 0
+      });
       setEditId(null);
       setIsDrawerOpen(false);
       loadShows();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde de l\'émission.');
+      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -77,9 +104,12 @@ export default function Shows() {
       description: show.description || '', 
       host: show.host || '',
       category: show.category || '',
-      replay_url: show.replay_url || '',
+      image_url: show.image_url || '',
       live_url: show.live_url || '',
-      is_live: show.is_live || false
+      replay_url: show.replay_url || '',
+      duration: show.duration || '',
+      is_live: show.is_live || false,
+      views_count: show.views_count || 0
     });
     setEditId(show.id);
     setIsDrawerOpen(true);
@@ -90,7 +120,18 @@ export default function Shows() {
   function handleCloseDrawer() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', description: '', host: '', category: '', replay_url: '', live_url: '', is_live: false });
+    setForm({ 
+      title: '', 
+      description: '', 
+      host: '', 
+      category: '', 
+      image_url: '',
+      live_url: '',
+      replay_url: '',
+      duration: '',
+      is_live: false,
+      views_count: 0
+    });
     setError('');
   }
 
@@ -150,19 +191,39 @@ export default function Shows() {
               value={form.category}
               onChange={e => setForm({...form, category: e.target.value})}
             />
+            <ImageUpload
+              label="Image de l'Émission"
+              value={form.image_url}
+              onChange={(url) => setForm({...form, image_url: url})}
+              disabled={submitting}
+              helperText="Sélectionnez une image pour l'émission"
+            />
+            <FormInput
+              label="URL du live"
+              placeholder="https://example.com/live/emission"
+              value={form.live_url}
+              onChange={e => setForm({...form, live_url: e.target.value})}
+              type="url"
+            />
             <FormInput
               label="URL du replay"
-              placeholder="https://exemple.com"
+              placeholder="https://example.com/replay/emission"
               value={form.replay_url}
               onChange={e => setForm({...form, replay_url: e.target.value})}
               type="url"
             />
             <FormInput
-              label="URL du live"
-              placeholder="https://exemple.com"
-              value={form.live_url}
-              onChange={e => setForm({...form, live_url: e.target.value})}
-              type="url"
+              label="Durée (format HH:MM:SS)"
+              placeholder="01:30:00"
+              value={form.duration}
+              onChange={e => setForm({...form, duration: e.target.value})}
+            />
+            <FormInput
+              label="Nombre de vues"
+              placeholder="0"
+              type="number"
+              value={form.views_count}
+              onChange={e => setForm({...form, views_count: parseInt(e.target.value) || 0})}
             />
             <FormTextarea
               label="Description"

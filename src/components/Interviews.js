@@ -9,12 +9,13 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload';
 
 export default function Interviews() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', guest_name: '', guest_role: '', description: '', image: '', duration_minutes: '', published_at: '' });
+  const [form, setForm] = useState({ title: '', guest_name: '', guest_role: '', description: '', image: '', duration_minutes: 0, published_at: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -61,7 +62,7 @@ export default function Interviews() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', guest_name: '', guest_role: '', description: '', image: '', duration_minutes: '', published_at: '' });
+    setForm({ title: '', guest_name: '', guest_role: '', description: '', image: '', duration_minutes: 0, published_at: '' });
     setError('');
   }
 
@@ -137,7 +138,12 @@ export default function Interviews() {
             <FormInput label="Nom de l'invité" placeholder="Nom complet" value={form.guest_name} onChange={e => setForm({...form, guest_name: e.target.value})} required />
             <FormInput label="Rôle/Fonction" placeholder="Ex: Présentateur, Artiste, etc." value={form.guest_role} onChange={e => setForm({...form, guest_role: e.target.value})} required />
             <FormTextarea label="Description" placeholder="Description ou contenu..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} required />
-            <FormInput label="URL Image" placeholder="https://..." value={form.image} onChange={e => setForm({...form, image: e.target.value})} type="url" required />
+            <ImageUpload
+              label="Image de l'Interview"
+              value={form.image}
+              onChange={(url) => setForm({...form, image: url})}
+              helperText="Sélectionnez une image pour l'interview"
+            />
             <FormInput label="Durée (minutes)" placeholder="30" value={form.duration_minutes} onChange={e => setForm({...form, duration_minutes: e.target.value})} type="number" min="1" max="600" required />
             <FormInput label="Date de publication" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} type="datetime-local" />
             <div className="flex gap-3 pt-2">

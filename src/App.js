@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AdminLogin from './screens/AdminLogin';
@@ -28,10 +28,24 @@ import Payments from './components/Payments';
 import Contact from './components/Contact';
 // import Premium from './components/Premium';
 // import Uploads from './components/Uploads';
+import Programs from './components/Programs';
+import SubscriptionPlans from './components/SubscriptionPlans';
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [section, setSection] = useState('dashboard');
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return localStorage.getItem('isAdminLoggedIn') === 'true';
+  });
+  const [section, setSection] = useState(() => {
+    return localStorage.getItem('currentSection') || 'dashboard';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('isAdminLoggedIn', isAdmin);
+  }, [isAdmin]);
+
+  useEffect(() => {
+    localStorage.setItem('currentSection', section);
+  }, [section]);
 
   if (!isAdmin) {
     return <AdminLogin onLogin={() => setIsAdmin(true)} />;
@@ -41,7 +55,11 @@ function App() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar currentSection={section} onSectionChange={setSection} />
       <div className="flex-1 ml-64">
-        <Header onLogout={() => setIsAdmin(false)} onSectionChange={setSection} />
+        <Header onLogout={() => {
+          setIsAdmin(false);
+          localStorage.removeItem('isAdminLoggedIn');
+          localStorage.removeItem('currentSection');
+        }} onSectionChange={setSection} />
         <main className="mt-16 p-6">
           {section === 'dashboard' && <Dashboard />}
           {section === 'users' && <UsersScreen />}
@@ -61,6 +79,8 @@ function App() {
           {section === 'likes' && <Likes />}
           {section === 'payments' && <Payments />}
           {section === 'contact' && <Contact />}
+          {section === 'programs' && <Programs />}
+          {section === 'subscriptionPlans' && <SubscriptionPlans />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}

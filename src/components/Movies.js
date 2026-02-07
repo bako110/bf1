@@ -9,16 +9,26 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload';
 
 export default function Movies() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', video_url: '', image_url: '', is_premium: false });
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    genre: [],
+    release_date: '',
+    duration: 0,
+    video_url: '',
+    image_url: '',
+    is_premium: false
+  });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     loadMovies();
@@ -40,6 +50,7 @@ export default function Movies() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSubmitting(true);
     try {
       if (editId) {
         await updateMovie(editId, form);
@@ -48,30 +59,15 @@ export default function Movies() {
         await createMovie(form);
         setSuccess('Film créé avec succès.');
       }
-      setForm({ title: '', description: '', video_url: '', image_url: '', is_premium: false });
-      setEditId(null);
-      setIsDrawerOpen(false);
+      handleCloseDrawer();
       loadMovies();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde du film.');
+      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  async function handleImageSelect(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError('');
-    setSuccess('');
-    setImageUploading(true);
-    try {
-      const result = await uploadMovieImage(file);
-      setForm((prev) => ({ ...prev, image_url: result.url }));
-    } catch (err) {
-      setError("Erreur lors de l'upload de l'image.");
-    } finally {
-      setImageUploading(false);
-    }
-  }
 
   async function handleDelete(item) {
     const id = item.id || item._id;
@@ -92,6 +88,9 @@ export default function Movies() {
     setForm({ 
       title: movie.title, 
       description: movie.description || '', 
+      genre: movie.genre || [],
+      release_date: movie.release_date ? new Date(movie.release_date).toISOString().split('T')[0] : '',
+      duration: movie.duration || 0,
       video_url: movie.video_url || '', 
       image_url: movie.image_url || '',
       is_premium: movie.is_premium || false
@@ -105,21 +104,35 @@ export default function Movies() {
   function handleCloseDrawer() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', description: '', video_url: '', image_url: '', is_premium: false });
+    setForm({
+      title: '',
+      description: '',
+      genre: [],
+      release_date: '',
+      duration: 0,
+      video_url: '',
+      image_url: '',
+      is_premium: false
+    });
     setError('');
   }
 
   const columns = [
     { key: 'title', label: 'Titre' },
     { 
-      key: 'image_url', 
-      label: 'Image',
-      render: (val) => val ? '✓' : '✗'
+      key: 'genre', 
+      label: 'Genres',
+      render: (val) => Array.isArray(val) ? val.join(', ') : '-'
+    },
+    { 
+      key: 'duration', 
+      label: 'Durée',
+      render: (val) => val ? `${val} min` : '-'
     },
     { 
       key: 'is_premium', 
       label: 'Type',
-      render: (val) => val ? 'Premium' : 'Gratuit'
+      render: (val) => val ? '💎 Premium' : '🆓 Gratuit'
     }
   ];
 
@@ -147,51 +160,73 @@ export default function Movies() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? 'Modifier le Film' : 'Nouveau Film'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Film' : '➕ Nouveau Film'}>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
+              <p className="text-sm text-purple-800">
+                <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un film complet.
+              </p>
+            </div>
+
             <FormInput
-              label="Titre"
-              placeholder="Titre du film"
+              label="Titre du Film"
+              placeholder="Le Destin de Koumba"
               value={form.title}
               onChange={e => setForm({...form, title: e.target.value})}
               required
             />
+
             <FormInput
-              label="URL de la vidéo"
-              placeholder="https://exemple.com"
+              label="Genres (séparés par des virgules)"
+              placeholder="Drame, Romance, Action"
+              value={form.genre.join(', ')}
+              onChange={e => setForm({...form, genre: e.target.value.split(',').map(g => g.trim()).filter(g => g)})}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput
+                label="Date de Sortie"
+                type="date"
+                value={form.release_date}
+                onChange={e => setForm({...form, release_date: e.target.value})}
+              />
+
+              <FormInput
+                label="Durée (minutes)"
+                type="number"
+                placeholder="120"
+                value={form.duration}
+                onChange={e => setForm({...form, duration: parseInt(e.target.value) || 0})}
+                min="0"
+                max="500"
+              />
+            </div>
+
+            <FormInput
+              label="URL de la Vidéo"
+              placeholder="https://exemple.com/video.mp4"
               type="url"
               value={form.video_url}
               onChange={e => setForm({...form, video_url: e.target.value})}
             />
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Affiche</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-              />
-              {imageUploading && (
-                <div className="text-sm text-blue-600 mt-2">Upload en cours...</div>
-              )}
-              {!!form.image_url && (
-                <div className="mt-3">
-                  <img
-                    src={form.image_url}
-                    alt="Aperçu"
-                    className="h-32 w-24 object-cover border border-gray-300 rounded-lg"
-                  />
-                </div>
-              )}
-            </div>
+
+            <ImageUpload
+              label="Affiche du Film"
+              value={form.image_url}
+              onChange={(url) => setForm({...form, image_url: url})}
+              disabled={submitting}
+              helperText="Sélectionnez une image pour l'affiche du film"
+            />
+
             <FormTextarea
               label="Description"
-              placeholder="Description du film..."
+              placeholder="Description détaillée du film..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={6}
             />
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <input 
                 type="checkbox" 
                 id="is_premium"
@@ -199,24 +234,36 @@ export default function Movies() {
                 onChange={e => setForm({...form, is_premium: e.target.checked})} 
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
-              <label htmlFor="is_premium" className="text-sm font-medium text-gray-700">Film Premium</label>
+              <label htmlFor="is_premium" className="text-sm font-medium text-gray-700">💎 Film Premium (accès payant)</label>
             </div>
-            <div className="flex gap-3 pt-2">
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
               <Button 
                 type="submit"
                 variant="primary"
                 fullWidth
-                disabled={imageUploading}
+                disabled={submitting}
               >
-                {editId ? 'Mettre à jour' : 'Créer'}
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enregistrement...
+                  </span>
+                ) : (
+                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                )}
               </Button>
               <Button 
                 type="button"
                 variant="ghost"
                 fullWidth
                 onClick={handleCloseDrawer}
+                disabled={submitting}
               >
-                Annuler
+                ❌ Annuler
               </Button>
             </div>
           </form>

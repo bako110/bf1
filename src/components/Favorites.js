@@ -42,9 +42,35 @@ export default function Favorites() {
   }
 
   const columns = [
-    { key: 'user_id', label: 'Utilisateur' },
-    { key: 'content_type', label: 'Type de contenu' },
-    { key: 'content_id', label: 'ID Contenu' },
+    { 
+      key: 'user_id', 
+      label: 'Utilisateur',
+      render: (val) => val ? `Utilisateur ${val.substring(0, 8)}...` : 'Inconnu'
+    },
+    { 
+      key: 'content_type', 
+      label: 'Type de Contenu',
+      render: (val) => {
+        const types = {
+          'movie': 'Film',
+          'show': 'Émission',
+          'replay': 'Replay',
+          'reel': 'Reel',
+          'interview': 'Interview'
+        };
+        return types[val] || val;
+      }
+    },
+    { 
+      key: 'content_id', 
+      label: 'Contenu',
+      render: (val) => val ? `Contenu ${val.substring(0, 8)}...` : '-'
+    },
+    { 
+      key: 'created_at', 
+      label: 'Date d\'Ajout',
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : '-'
+    },
   ];
 
   const actions = [

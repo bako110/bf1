@@ -9,6 +9,7 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload';
 
 export default function BreakingNews() {
   const [items, setItems] = useState([]);
@@ -154,13 +155,11 @@ export default function BreakingNews() {
               rows={6}
               required
             />
-            <FormInput
-              label="URL Image"
-              placeholder="https://exemple.com/image.jpg"
+            <ImageUpload
+              label="Image de l'Actualité"
               value={form.image}
-              onChange={e => setForm({...form, image: e.target.value})}
-              type="url"
-              required
+              onChange={(url) => setForm({...form, image: url})}
+              helperText="Sélectionnez une image pour l'actualité"
             />
             <div className="flex gap-3 pt-2">
               <Button 
