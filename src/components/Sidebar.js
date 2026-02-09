@@ -15,6 +15,7 @@ const sections = [
   { label: 'Replay', key: 'replay' },
   { label: 'Reel', key: 'reel' },
   { label: 'Interview', key: 'interview' },
+  { label: 'Archives', key: 'archives' },
   
   { label: 'Engagement', key: 'submenu_engagement', isHeader: true },
   { label: 'Commentaires', key: 'comments' },
@@ -32,10 +33,10 @@ const sections = [
   { label: 'Paramètres', key: 'settings' },
 ];
 
-export default function Sidebar({ currentSection, onSectionChange }) {
+export default function Sidebar({ currentSection, onSectionChange, onLogout }) {
   const handleLogout = () => {
     logoutAdmin();
-    window.location.reload();
+    if (onLogout) onLogout();
   };
 
   return (
@@ -79,7 +80,7 @@ export default function Sidebar({ currentSection, onSectionChange }) {
       <div className="border-t border-gray-300 p-4">
         <button
           onClick={handleLogout}
-          className="w-full bg-white text-black border border-black py-3 px-4 text-sm font-semibold uppercase tracking-wide transition-colors"
+          className="w-full bg-red-600 text-white py-3 px-4 text-sm font-semibold uppercase tracking-wide transition-colors hover:bg-red-700"
         >
           Déconnexion
         </button>

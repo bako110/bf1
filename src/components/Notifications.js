@@ -56,7 +56,10 @@ export default function Notifications() {
     { 
       key: 'message', 
       label: 'Message',
-      render: (val) => val && val.length > 50 ? val.substring(0, 50) + '...' : val
+      render: (val) => {
+        const str = String(val || '');
+        return str.length > 50 ? str.substring(0, 50) + '...' : str;
+      }
     },
     {
       key: 'is_read',

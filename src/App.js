@@ -30,6 +30,7 @@ import Contact from './components/Contact';
 // import Uploads from './components/Uploads';
 import Programs from './components/Programs';
 import SubscriptionPlans from './components/SubscriptionPlans';
+import Archives from './components/Archives';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -53,7 +54,11 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar currentSection={section} onSectionChange={setSection} />
+      <Sidebar currentSection={section} onSectionChange={setSection} onLogout={() => {
+          setIsAdmin(false);
+          localStorage.removeItem('isAdminLoggedIn');
+          localStorage.removeItem('currentSection');
+        }} />
       <div className="flex-1 ml-64">
         <Header onLogout={() => {
           setIsAdmin(false);
@@ -81,6 +86,7 @@ function App() {
           {section === 'contact' && <Contact />}
           {section === 'programs' && <Programs />}
           {section === 'subscriptionPlans' && <SubscriptionPlans />}
+          {section === 'archives' && <Archives />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}

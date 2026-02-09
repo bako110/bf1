@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchPrograms() {
-  const res = await api.get('/programs');
+export async function fetchPrograms(page = 1, limit = 20) {
+  const res = await api.get(`/programs?page=${page}&limit=${limit}`);
   return res.data;
 }
 

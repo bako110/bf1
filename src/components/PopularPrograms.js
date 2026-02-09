@@ -10,6 +10,7 @@ import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
+import Pagination from './ui/Pagination';
 
 export default function PopularPrograms() {
   const [items, setItems] = useState([]);
@@ -20,22 +21,50 @@ export default function PopularPrograms() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     loadPrograms();
   }, []);
 
-  async function loadPrograms() {
-    setLoading(true);
+  async function loadPrograms(page = 1, append = false) {
+    if (!append) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
     setError('');
     try {
-      const data = await fetchPopularPrograms();
-      setItems(data);
+      const data = await fetchPopularPrograms(page, itemsPerPage);
+      if (append) {
+        setItems(prev => [...prev, ...data.items]);
+      } else {
+        setItems(data.items || data);
+      }
+      setTotalItems(data.total || data.length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement.');
     }
     setLoading(false);
+    setPaginationLoading(false);
   }
+
+  // Handlers de pagination
+  const handlePageChange = (page) => {
+    loadPrograms(page);
+  };
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !paginationLoading) {
+      loadPrograms(currentPage + 1, true);
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -138,6 +167,28 @@ export default function PopularPrograms() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {/* Bouton charger plus */}
+        {items.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus de programmes ({items.length}/{totalItems})
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier le Programme' : '➕ Nouveau Programme'}>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -251,6 +302,18 @@ export default function PopularPrograms() {
               columns={columns}
               data={items}
               actions={actions}
+            />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
             />
           </div>
         )}

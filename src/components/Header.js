@@ -1,32 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { countUnreadMessages } from '../services/messageService';
 import { getCurrentUser } from '../services/userService';
 import { fetchNotifications, markAsRead, getUnreadCount } from '../services/notificationService';
-import { logoutAdmin } from '../services/authService';
 
 export default function Header({ onLogout, onSectionChange }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    loadUnreadMessages();
     loadCurrentUser();
     loadNotifications();
   }, []);
 
-  async function loadUnreadMessages() {
-    try {
-      const data = await countUnreadMessages();
-      setUnreadMessages(data.count);
-    } catch (error) {
-      console.error('Erreur lors du chargement des messages non lus:', error);
-    }
-  }
-
+  
   async function loadCurrentUser() {
     try {
       const user = await getCurrentUser();
@@ -56,12 +44,7 @@ export default function Header({ onLogout, onSectionChange }) {
     }
   }
 
-  function handleLogout() {
-    logoutAdmin();
-    if (onLogout) onLogout();
-    window.location.reload();
-  }
-
+  
   function getInitials(name) {
     if (!name) return 'A';
     return name.charAt(0).toUpperCase();
@@ -77,19 +60,6 @@ export default function Header({ onLogout, onSectionChange }) {
 
         {/* Actions à droite */}
         <div className="flex items-center gap-4">
-          {/* Messages */}
-          <div className="relative">
-            <button className="relative p-2 hover:bg-gray-100 transition-colors">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              {unreadMessages > 0 && (
-                <span className="absolute top-1 right-1 bg-black text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                  {unreadMessages}
-                </span>
-              )}
-            </button>
-          </div>
 
           {/* Notifications */}
           <div className="relative">
@@ -179,27 +149,11 @@ export default function Header({ onLogout, onSectionChange }) {
                   </div>
                 )}
                 <div className="p-2">
-                  <button 
-                    onClick={() => {
-                      if (onSectionChange) onSectionChange('settings');
-                      setShowProfile(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Mon Profil
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (onSectionChange) onSectionChange('settings');
-                      setShowProfile(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Paramètres
-                  </button>
                   <div className="border-t border-gray-200 my-2"></div>
                   <button 
-                    onClick={handleLogout}
+                    onClick={() => {
+                      if (onLogout) onLogout();
+                    }}
                     className="w-full text-left px-4 py-2 text-sm text-black font-semibold hover:bg-gray-100 transition-colors"
                   >
                     Déconnexion

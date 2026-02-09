@@ -65,8 +65,8 @@ export default function Uploads() {
   }
 
   const columns = [
-    { key: 'filename', label: 'Nom du fichier', render: (val, item) => val || item.name },
-    { key: 'file_type', label: 'Type' },
+    { key: 'filename', label: 'Nom du fichier', render: (val, row) => val || row.name },
+    { key: 'file_type', label: 'Type', render: (val) => String(val || '') },
     { 
       key: 'created_at', 
       label: 'Date',
@@ -75,9 +75,9 @@ export default function Uploads() {
     {
       key: 'url',
       label: 'Fichier',
-      render: (val, item) => (
+      render: (val, row) => (
         <a 
-          href={val || item.file_url} 
+          href={val || row.file_url} 
           target="_blank" 
           rel="noopener noreferrer" 
           className="text-blue-600 hover:text-blue-800 font-medium text-sm"

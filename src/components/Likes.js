@@ -45,7 +45,7 @@ export default function Likes() {
     { 
       key: 'user_id', 
       label: 'Utilisateur',
-      render: (val) => val ? `Utilisateur ${val.substring(0, 8)}...` : 'Inconnu'
+      render: (val) => val ? `Utilisateur ${String(val).substring(0, 8)}...` : 'Inconnu'
     },
     { 
       key: 'content_type', 
@@ -64,7 +64,7 @@ export default function Likes() {
     { 
       key: 'content_id', 
       label: 'Contenu',
-      render: (val) => val ? `Contenu ${val.substring(0, 8)}...` : '-'
+      render: (val) => val ? `Contenu ${String(val).substring(0, 8)}...` : '-'
     },
     { 
       key: 'created_at', 

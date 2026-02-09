@@ -10,6 +10,7 @@ import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
+import Pagination from './ui/Pagination';
 
 export default function Interviews() {
   const [items, setItems] = useState([]);
@@ -19,22 +20,50 @@ export default function Interviews() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     loadInterviews();
   }, []);
 
-  async function loadInterviews() {
-    setLoading(true);
+  async function loadInterviews(page = 1, append = false) {
+    if (!append) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
     setError('');
     try {
-      const data = await fetchInterviews();
-      setItems(data);
+      const data = await fetchInterviews(page, itemsPerPage);
+      if (append) {
+        setItems(prev => [...prev, ...data.items]);
+      } else {
+        setItems(data.items || data);
+      }
+      setTotalItems(data.total || data.length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement des interviews.');
     }
     setLoading(false);
+    setPaginationLoading(false);
   }
+
+  // Handlers de pagination
+  const handlePageChange = (page) => {
+    loadInterviews(page);
+  };
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !paginationLoading) {
+      loadInterviews(currentPage + 1, true);
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -95,12 +124,6 @@ export default function Interviews() {
     setIsDrawerOpen(true);
   }
 
-  function handleCloseDrawer() {
-    setIsDrawerOpen(false);
-    setEditId(null);
-    setForm({ title: '', guest: '', description: '', video_url: '', air_date: '' });
-  }
-
   const columns = [
     { key: 'title', label: 'Titre' },
     { key: 'guest_name', label: 'Invité' },
@@ -132,6 +155,28 @@ export default function Interviews() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
+        {/* Bouton charger plus */}
+        {items.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus d'interviews ({items.length}/{totalItems})
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier l\'Interview' : 'Nouvelle Interview'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput label="Titre" placeholder="Titre de l'interview" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
@@ -160,6 +205,18 @@ export default function Interviews() {
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <DataTable columns={columns} data={items} actions={actions} />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
+            />
           </div>
         )}
       </div>

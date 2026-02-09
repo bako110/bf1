@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchShows() {
-  const res = await api.get('/shows');
+export async function fetchShows(page = 1, limit = 20) {
+  const res = await api.get(`/shows?page=${page}&limit=${limit}`);
   return res.data;
 }
 

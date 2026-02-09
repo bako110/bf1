@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchTrendingShows(skip = 0, limit = 50) {
-  const res = await api.get('/trending-shows');
+export async function fetchTrendingShows(page = 1, limit = 20) {
+  const res = await api.get(`/trending-shows?page=${page}&limit=${limit}`);
   return res.data;
 }
 

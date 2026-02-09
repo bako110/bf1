@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchMovies, createMovie, updateMovie, deleteMovie, uploadMovieImage } from '../services/movieService';
+import { fetchMovies, createMovie, updateMovie, deleteMovie } from '../services/movieService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -9,7 +9,9 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
 import ImageUpload from './ui/ImageUpload';
+import Pagination from './ui/Pagination';
 
 export default function Movies() {
   const [movies, setMovies] = useState([]);
@@ -29,22 +31,52 @@ export default function Movies() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     loadMovies();
   }, []);
 
-  async function loadMovies() {
-    setLoading(true);
+  async function loadMovies(page = 1, append = false) {
+    if (!append) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
     setError('');
     try {
-      const data = await fetchMovies();
-      setMovies(data);
+      const data = await fetchMovies(page, itemsPerPage);
+      if (append) {
+        setMovies(prev => [...prev, ...data.items]);
+      } else {
+        setMovies(data.items || data);
+      }
+      setTotalItems(data.total || data.length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement des films.');
     }
     setLoading(false);
+    setPaginationLoading(false);
   }
+
+  // Handlers de pagination
+  const handlePageChange = (page) => {
+    loadMovies(page);
+  };
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !paginationLoading) {
+      loadMovies(currentPage + 1, true);
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -69,18 +101,24 @@ export default function Movies() {
   }
 
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
-    setError('');
-    setSuccess('');
-    if (window.confirm('Supprimer ce film ?')) {
-      try {
-        await deleteMovie(id);
-        setSuccess('Film supprimé.');
-        loadMovies();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    
+    const id = itemToDelete.id || itemToDelete._id;
+    try {
+      await deleteMovie(id);
+      setSuccess('Film supprimé.');
+      loadMovies();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -141,6 +179,7 @@ export default function Movies() {
     { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
   ];
 
+  
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -159,6 +198,28 @@ export default function Movies() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {/* Bouton charger plus */}
+        {movies.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus de films ({movies.length}/{totalItems})
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Film' : '➕ Nouveau Film'}>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -284,9 +345,36 @@ export default function Movies() {
               data={movies}
               actions={actions}
             />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
+            />
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer le Film"
+        message={`Êtes-vous sûr de vouloir supprimer le film "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

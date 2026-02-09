@@ -10,6 +10,8 @@ import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
+import ConfirmModal from './ui/ConfirmModal';
+import Pagination from './ui/Pagination';
 
 export default function Replays() {
   const [items, setItems] = useState([]);
@@ -32,22 +34,52 @@ export default function Replays() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     loadReplays();
   }, []);
 
-  async function loadReplays() {
-    setLoading(true);
+  async function loadReplays(page = 1, append = false) {
+    if (!append) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
     setError('');
     try {
-      const data = await fetchReplays();
-      setItems(data);
+      const data = await fetchReplays(page, itemsPerPage);
+      if (append) {
+        setItems(prev => [...prev, ...data.items]);
+      } else {
+        setItems(data.items || data);
+      }
+      setTotalItems(data.total || data.length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement des replays.');
     }
     setLoading(false);
+    setPaginationLoading(false);
   }
+
+  // Handlers de pagination
+  const handlePageChange = (page) => {
+    loadReplays(page);
+  };
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !paginationLoading) {
+      loadReplays(currentPage + 1, true);
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -71,16 +103,24 @@ export default function Replays() {
     }
   }
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce replay ?')) {
-      try {
-        await deleteReplay(id);
-        setSuccess('Replay supprimé.');
-        loadReplays();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    
+    const id = itemToDelete.id || itemToDelete._id;
+    try {
+      await deleteReplay(id);
+      setSuccess('Replay supprimé.');
+      loadReplays();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -124,13 +164,13 @@ export default function Replays() {
   }
 
   const columns = [
-    { key: 'title', label: 'Titre' },
-    { key: 'category', label: 'Catégorie' },
-    { key: 'program_title', label: 'Programme' },
+    { key: 'title', label: 'Titre', render: (val) => String(val || '') },
+    { key: 'category', label: 'Catégorie', render: (val) => String(val || '') },
+    { key: 'program_title', label: 'Programme', render: (val) => String(val || '') },
     { 
       key: 'duration_minutes', 
       label: 'Durée',
-      render: (val) => val ? `${val} min` : '-'
+      render: (val) => `${val || 0} min`
     },
     { 
       key: 'aired_at', 
@@ -162,6 +202,28 @@ export default function Replays() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {/* Bouton charger plus */}
+        {items.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus de replays ({items.length}/{totalItems})
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Replay' : '➕ Nouveau Replay'}>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -295,9 +357,36 @@ export default function Replays() {
               data={items}
               actions={actions}
             />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
+            />
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer le Replay"
+        message={`Êtes-vous sûr de vouloir supprimer le replay "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchUsers() {
-  const res = await api.get('/users');
+export async function fetchUsers(page = 1, limit = 20) {
+  const res = await api.get(`/users?page=${page}&limit=${limit}`);
   return res.data;
 }
 

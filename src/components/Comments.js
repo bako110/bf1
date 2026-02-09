@@ -1,58 +1,76 @@
 import React, { useEffect, useState } from 'react';
-import { fetchComments, deleteComment } from '../services/commentsService';
+import { fetchComments } from '../services/commentsService';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import EmptyState from './ui/EmptyState';
+import Pagination from './ui/Pagination';
 
 export default function Comments() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     loadComments();
   }, []);
 
-  async function loadComments() {
-    setLoading(true);
+  async function loadComments(page = 1, append = false) {
+    if (!append) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
     setError('');
     try {
-      const data = await fetchComments();
-      setItems(data);
+      const data = await fetchComments(page, itemsPerPage);
+      if (append) {
+        setItems(prev => [...prev, ...data.items]);
+      } else {
+        setItems(data.items || data);
+      }
+      setTotalItems(data.total || data.length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement des commentaires.');
     }
     setLoading(false);
+    setPaginationLoading(false);
   }
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
-    setError('');
-    setSuccess('');
-    if (window.confirm('Supprimer ce commentaire ?')) {
-      try {
-        await deleteComment(id);
-        setSuccess('Commentaire supprimé.');
-        loadComments();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+  // Handlers de pagination
+  const handlePageChange = (page) => {
+    loadComments(page);
+  };
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !paginationLoading) {
+      loadComments(currentPage + 1, true);
     }
-  }
+  };
 
+  
   const columns = [
     { 
-      key: 'user_id', 
+      key: 'username', 
       label: 'Utilisateur',
-      render: (val) => val ? `Utilisateur ${val.substring(0, 8)}...` : 'Anonyme'
+      render: (val) => val || 'Anonyme'
     },
     { 
       key: 'text', 
       label: 'Commentaire', 
-      render: (val) => val ? (val.length > 80 ? val.substring(0, 80) + '...' : val) : '-'
+      render: (val) => {
+        const str = String(val || '');
+        return str.length > 80 ? str.substring(0, 80) + '...' : str;
+      }
     },
     { 
       key: 'content_type', 
@@ -64,7 +82,7 @@ export default function Comments() {
           'replay': 'Replay',
           'reel': 'Reel'
         };
-        return types[val] || val;
+        return types[val] || String(val);
       }
     },
     { 
@@ -90,6 +108,28 @@ export default function Comments() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
+        {/* Bouton charger plus */}
+        {items.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus de commentaires ({items.length}/{totalItems})
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <Loader size="lg" text="Chargement des commentaires..." />
         ) : items.length === 0 ? (
@@ -103,6 +143,18 @@ export default function Comments() {
             <DataTable 
               columns={columns}
               data={items}
+            />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
             />
           </div>
         )}

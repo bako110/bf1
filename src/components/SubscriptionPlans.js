@@ -8,6 +8,7 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import EmptyState from './ui/EmptyState';
+import Pagination from './ui/Pagination';
 
 export default function SubscriptionPlans() {
   const [plans, setPlans] = useState([]);
@@ -25,22 +26,50 @@ export default function SubscriptionPlans() {
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     loadPlans();
   }, []);
 
-  async function loadPlans() {
-    setLoading(true);
+  async function loadPlans(page = 1, append = false) {
+    if (!append) {
+      setLoading(true);
+    } else {
+      setPaginationLoading(true);
+    }
     setError('');
     try {
-      const data = await fetchSubscriptionPlans();
-      setPlans(data);
+      const data = await fetchSubscriptionPlans(page, itemsPerPage);
+      if (append) {
+        setPlans(prev => [...prev, ...data.items]);
+      } else {
+        setPlans(data.items || data);
+      }
+      setTotalItems(data.total || data.length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement des plans d\'abonnement.');
     }
     setLoading(false);
+    setPaginationLoading(false);
   }
+
+  // Handlers de pagination
+  const handlePageChange = (page) => {
+    loadPlans(page);
+  };
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !paginationLoading) {
+      loadPlans(currentPage + 1, true);
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -122,12 +151,7 @@ export default function SubscriptionPlans() {
       label: 'Durée',
       render: (val) => `${val} mois`
     },
-    { 
-      key: 'price_cents', 
-      label: 'Prix',
-      render: (val, item) => `${(val / 100).toFixed(0)} ${item.currency}`
-    },
-    { 
+        { 
       key: 'is_active', 
       label: 'Statut',
       render: (val) => val ? (
@@ -166,6 +190,28 @@ export default function SubscriptionPlans() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {/* Bouton charger plus */}
+        {plans.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus de plans ({plans.length}/{totalItems})
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier le Plan' : '➕ Nouveau Plan'}>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -285,6 +331,18 @@ export default function SubscriptionPlans() {
               columns={columns}
               data={plans}
               actions={actions}
+            />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
             />
           </div>
         )}

@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchSubscriptionPlans() {
-  const res = await api.get('/subscription-plans');
+export async function fetchSubscriptionPlans(page = 1, limit = 20) {
+  const res = await api.get(`/subscription-plans?page=${page}&limit=${limit}`);
   return res.data;
 }
 

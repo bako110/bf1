@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchBreakingNews(skip = 0, limit = 50) {
-  const res = await api.get('/news');
+export async function fetchBreakingNews(page = 1, limit = 20) {
+  const res = await api.get(`/news?page=${page}&limit=${limit}`);
   return res.data;
 }
 

@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchReels(skip = 0, limit = 50) {
-  const res = await api.get('/reels');
+export async function fetchReels(page = 1, limit = 20) {
+  const res = await api.get(`/reels?page=${page}&limit=${limit}`);
   return res.data;
 }
 

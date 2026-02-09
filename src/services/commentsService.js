@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchComments(skip = 0, limit = 1000) {
-  const res = await api.get('/comments', { params: { skip, limit } });
+export async function fetchComments(page = 1, limit = 20) {
+  const res = await api.get(`/comments?page=${page}&limit=${limit}`);
   return res.data;
 }
 

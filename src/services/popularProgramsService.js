@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchPopularPrograms(skip = 0, limit = 50) {
-  const res = await api.get('/popular-programs');
+export async function fetchPopularPrograms(page = 1, limit = 20) {
+  const res = await api.get(`/popular-programs?page=${page}&limit=${limit}`);
   return res.data;
 }
 

@@ -1,7 +1,7 @@
 import api from '../config/api';
 
-export async function fetchReplays(skip = 0, limit = 50) {
-  const res = await api.get('/replays');
+export async function fetchReplays(page = 1, limit = 20) {
+  const res = await api.get(`/replays?page=${page}&limit=${limit}`);
   return res.data;
 }
 
