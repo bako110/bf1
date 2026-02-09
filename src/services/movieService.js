@@ -15,12 +15,20 @@ export async function uploadMovieImage(file) {
 }
 
 export async function createMovie(movie) {
-  const res = await api.post('/movies', movie);
+  const res = await api.post('/movies', movie, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return res.data;
 }
 
 export async function updateMovie(id, movie) {
-  const res = await api.put(`/movies/${id}`, movie);
+  const res = await api.put(`/movies/${id}`, movie, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return res.data;
 }
 

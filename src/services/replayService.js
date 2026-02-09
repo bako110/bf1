@@ -6,12 +6,20 @@ export async function fetchReplays(page = 1, limit = 20) {
 }
 
 export async function createReplay(replay) {
-  const res = await api.post('/replays', replay);
+  const res = await api.post('/replays', replay, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return res.data;
 }
 
 export async function updateReplay(id, replay) {
-  const res = await api.patch(`/replays/${id}`, replay);
+  const res = await api.patch(`/replays/${id}`, replay, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return res.data;
 }
 

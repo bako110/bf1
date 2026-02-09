@@ -23,13 +23,12 @@ export default function Replays() {
     description: '', 
     category: '', 
     thumbnail: '', 
-    video_url: '', 
+    video_file: null,
     duration_minutes: 0, 
     views: 0, 
     rating: 0, 
     aired_at: '', 
-    program_title: '', 
-    host: '' 
+    program_title: ''
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -86,12 +85,29 @@ export default function Replays() {
     setError('');
     setSuccess('');
     setSubmitting(true);
+    
     try {
+      // Créer FormData pour l'upload de fichier
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('description', form.description);
+      formData.append('category', form.category);
+      formData.append('thumbnail', form.thumbnail);
+      formData.append('duration_minutes', form.duration_minutes);
+      formData.append('views', form.views);
+      formData.append('rating', form.rating);
+      formData.append('aired_at', form.aired_at);
+      formData.append('program_title', form.program_title);
+      
+      if (form.video_file) {
+        formData.append('video_file', form.video_file);
+      }
+      
       if (editId) {
-        await updateReplay(editId, form);
+        await updateReplay(editId, formData);
         setSuccess('Replay modifié avec succès.');
       } else {
-        await createReplay(form);
+        await createReplay(formData);
         setSuccess('Replay créé avec succès.');
       }
       handleCloseDrawer();
@@ -130,13 +146,12 @@ export default function Replays() {
       description: item.description || '',
       category: item.category || '',
       thumbnail: item.thumbnail || '',
-      video_url: item.video_url || '',
+      video_file: null,
       duration_minutes: item.duration_minutes || 0,
       views: item.views || 0,
       rating: item.rating || 0,
       aired_at: item.aired_at ? new Date(item.aired_at).toISOString().split('T')[0] : '',
-      program_title: item.program_title || '',
-      host: item.host || ''
+      program_title: item.program_title || ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -152,13 +167,12 @@ export default function Replays() {
       description: '', 
       category: '', 
       thumbnail: '', 
-      video_url: '', 
+      video_file: null,
       duration_minutes: 0, 
       views: 0, 
       rating: 0, 
       aired_at: '', 
-      program_title: '', 
-      host: '' 
+      program_title: ''
     });
     setError('');
   }
@@ -256,21 +270,38 @@ export default function Replays() {
               onChange={e => setForm({...form, program_title: e.target.value})}
             />
 
-            <FormInput
-              label="Présentateur/Animateur"
-              placeholder="Fatou Sow"
-              value={form.host}
-              onChange={e => setForm({...form, host: e.target.value})}
-            />
-
-            <FormInput
-              label="URL de la Vidéo"
-              placeholder="https://exemple.com/video.mp4"
-              type="url"
-              value={form.video_url}
-              onChange={e => setForm({...form, video_url: e.target.value})}
-              required
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Fichier Vidéo <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                      <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                    </svg>
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Cliquez pour sélectionner</span> ou glissez-déposez
+                    </p>
+                    <p className="text-xs text-gray-500">MP4, WebM, OGG (MAX. 100MB)</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="video/*"
+                    onChange={e => setForm({...form, video_file: e.target.files[0]})}
+                    required={!editId}
+                  />
+                </label>
+              </div>
+              {form.video_file && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                  <p className="text-sm text-green-800">
+                    📹 Fichier sélectionné: {form.video_file.name}
+                  </p>
+                </div>
+              )}
+            </div>
 
             <ImageUpload
               label="Miniature du Replay"

@@ -9,6 +9,7 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import FileUpload from './ui/FileUpload';
 import Pagination from './ui/Pagination';
 
 export default function Reels() {
@@ -18,8 +19,10 @@ export default function Reels() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ 
     title: '', 
-    username: '', 
-    description: ''
+    description: '',
+    video_file: null,
+    video_url: '',
+    video_source: 'file' // 'file' ou 'url'
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -32,7 +35,6 @@ export default function Reels() {
 
   const columns = [
     { key: 'title', label: 'Titre', render: (val) => String(val || '') },
-    { key: 'username', label: 'Créateur', render: (val) => String(val || '') },
     { 
       key: 'likes', 
       label: 'Likes',
@@ -104,18 +106,98 @@ export default function Reels() {
     setError('');
     setSuccess('');
     setSubmitting(true);
+    
     try {
+      // Validation des données
+      if (!form.title.trim()) {
+        setError('Le titre est requis');
+        setSubmitting(false);
+        return;
+      }
+      
+      if (!form.description.trim()) {
+        setError('La description est requise');
+        setSubmitting(false);
+        return;
+      }
+      
+      if (form.video_source === 'file' && !form.video_file) {
+        setError('Veuillez sélectionner un fichier vidéo');
+        setSubmitting(false);
+        return;
+      }
+      
+      if (form.video_source === 'url' && !form.video_url.trim()) {
+        setError('Veuillez entrer une URL vidéo valide');
+        setSubmitting(false);
+        return;
+      }
+      
+      let data;
+      
+      if (form.video_source === 'file') {
+        // Option fichier : utiliser FormData
+        const formData = new FormData();
+        formData.append('title', form.title);
+        formData.append('description', form.description);
+        
+        if (form.video_file) {
+          formData.append('video_file', form.video_file);
+        }
+        
+        data = formData;
+      } else {
+        // Option URL : utiliser JSON
+        data = {
+          title: form.title,
+          description: form.description,
+          video_url: form.video_url
+        };
+      }
+      
+      // Debug: afficher ce qui est envoyé
+      console.log('Envoi des données:', data);
+      console.log('Type de données:', data instanceof FormData ? 'FormData' : 'JSON');
+      
       if (editId) {
-        await updateReel(editId, form);
+        await updateReel(editId, data);
         setSuccess('Reel modifié avec succès.');
       } else {
-        await createReel(form);
+        await createReel(data);
         setSuccess('Reel créé avec succès.');
       }
       handleClose();
       loadReels();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      console.error('Erreur détaillée:', e);
+      console.error('Response data:', e.response?.data);
+      console.error('Response status:', e.response?.status);
+      
+      // Logging spécifique pour les erreurs 422
+      if (e.response?.status === 422) {
+        console.error('Detail content:', e.response?.data?.detail);
+        console.error('Detail type:', typeof e.response?.data?.detail);
+        console.error('Is array?', Array.isArray(e.response?.data?.detail));
+      }
+      
+      let errorMessage = e.response?.data?.message || 
+                   e.message || 
+                   'Erreur lors de la sauvegarde';
+      
+      // Gérer les erreurs de validation 422 avec détails
+      if (e.response?.status === 422 && e.response?.data?.detail) {
+        const details = e.response.data.detail;
+        if (Array.isArray(details)) {
+          // Si c'est un tableau d'erreurs de validation
+          errorMessage = details.map(err => 
+            typeof err === 'object' ? err.msg || err.message : String(err)
+          ).join(', ');
+        } else if (typeof details === 'string') {
+          errorMessage = details;
+        }
+      }
+      
+      setError('Erreur: ' + errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -136,10 +218,11 @@ export default function Reels() {
 
   function handleEdit(item) {
     setForm({
-      video_url: item.video_url || '',
       title: item.title || '',
-      username: item.username || '',
-      description: item.description || ''
+      description: item.description || '',
+      video_file: null,
+      video_url: item.video_url || '',
+      video_source: item.video_url ? 'url' : 'file'
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -149,10 +232,11 @@ export default function Reels() {
     setIsDrawerOpen(false);
     setEditId(null);
     setForm({ 
-      video_url: '', 
       title: '', 
-      username: '', 
-      description: ''
+      description: '',
+      video_file: null,
+      video_url: '',
+      video_source: 'file'
     });
     setError('');
   }
@@ -214,22 +298,62 @@ export default function Reels() {
               required
             />
 
-            <FormInput
-              label="Nom du Créateur"
-              placeholder="@username"
-              value={form.username}
-              onChange={e => setForm({...form, username: e.target.value})}
-              required
-            />
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Source de la Vidéo <span className="text-red-500">*</span>
+              </label>
+              
+              {/* Sélection de la source */}
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="video_source"
+                    value="file"
+                    checked={form.video_source === 'file'}
+                    onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier local</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="video_source"
+                    value="url"
+                    checked={form.video_source === 'url'}
+                    onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 Lien URL</span>
+                </label>
+              </div>
 
-            <FormInput
-              label="URL de la Vidéo"
-              placeholder="https://exemple.com/video.mp4"
-              type="url"
-              value={form.video_url}
-              onChange={e => setForm({...form, video_url: e.target.value})}
-              required
-            />
+              {/* Option Fichier */}
+              {form.video_source === 'file' && (
+                <FileUpload
+                  label="Fichier Vidéo"
+                  accept="video/*"
+                  maxSize={50 * 1024 * 1024} // 50MB
+                  value={form.video_file}
+                  onChange={(file) => setForm({...form, video_file: file})}
+                  disabled={submitting}
+                  helperText="Sélectionnez un fichier vidéo (MP4, WebM, OGG)"
+                />
+              )}
+
+              {/* Option URL */}
+              {form.video_source === 'url' && (
+                <FormInput
+                  label="URL de la Vidéo"
+                  placeholder="https://exemple.com/video.mp4"
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => setForm({...form, video_url: e.target.value})}
+                  required
+                />
+              )}
+            </div>
 
             <FormTextarea
               label="Description"

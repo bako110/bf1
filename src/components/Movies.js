@@ -10,7 +10,7 @@ import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
-import ImageUpload from './ui/ImageUpload';
+import FileUpload from './ui/FileUpload';
 import Pagination from './ui/Pagination';
 
 export default function Movies() {
@@ -24,8 +24,8 @@ export default function Movies() {
     genre: [],
     release_date: '',
     duration: 0,
-    video_url: '',
-    image_url: '',
+    video_file: null,
+    image_file: null,
     is_premium: false
   });
   const [editId, setEditId] = useState(null);
@@ -83,12 +83,30 @@ export default function Movies() {
     setError('');
     setSuccess('');
     setSubmitting(true);
+    
     try {
+      // Créer FormData pour l'upload de fichiers
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('description', form.description);
+      formData.append('genre', JSON.stringify(form.genre));
+      formData.append('release_date', form.release_date);
+      formData.append('duration', form.duration);
+      formData.append('is_premium', form.is_premium);
+      
+      if (form.video_file) {
+        formData.append('video_file', form.video_file);
+      }
+      
+      if (form.image_file) {
+        formData.append('image_file', form.image_file);
+      }
+      
       if (editId) {
-        await updateMovie(editId, form);
+        await updateMovie(editId, formData);
         setSuccess('Film modifié avec succès.');
       } else {
-        await createMovie(form);
+        await createMovie(formData);
         setSuccess('Film créé avec succès.');
       }
       handleCloseDrawer();
@@ -123,20 +141,19 @@ export default function Movies() {
   }
 
   function handleEdit(movie) {
-    setForm({ 
-      title: movie.title, 
-      description: movie.description || '', 
+    setForm({
+      title: movie.title || '',
+      description: movie.description || '',
       genre: movie.genre || [],
       release_date: movie.release_date ? new Date(movie.release_date).toISOString().split('T')[0] : '',
       duration: movie.duration || 0,
-      video_url: movie.video_url || '', 
-      image_url: movie.image_url || '',
+      video_file: null,
+      image_file: null,
       is_premium: movie.is_premium || false
     });
     setEditId(movie.id);
     setIsDrawerOpen(true);
     setError('');
-    setSuccess('');
   }
 
   function handleCloseDrawer() {
@@ -148,8 +165,8 @@ export default function Movies() {
       genre: [],
       release_date: '',
       duration: 0,
-      video_url: '',
-      image_url: '',
+      video_file: null,
+      image_file: null,
       is_premium: false
     });
     setError('');
@@ -263,20 +280,25 @@ export default function Movies() {
               />
             </div>
 
-            <FormInput
-              label="URL de la Vidéo"
-              placeholder="https://exemple.com/video.mp4"
-              type="url"
-              value={form.video_url}
-              onChange={e => setForm({...form, video_url: e.target.value})}
+            <FileUpload
+              label="Fichier Vidéo"
+              accept="video/*"
+              maxSize={500 * 1024 * 1024} // 500MB pour les vidéos
+              value={form.video_file}
+              onChange={(file) => setForm({...form, video_file: file})}
+              disabled={submitting}
+              helperText="Sélectionnez le fichier vidéo du film (MP4, WebM, OGG, MOV)"
             />
 
-            <ImageUpload
+            <FileUpload
               label="Affiche du Film"
-              value={form.image_url}
-              onChange={(url) => setForm({...form, image_url: url})}
+              accept="image/*"
+              maxSize={5 * 1024 * 1024} // 5MB pour les images
+              value={form.image_file}
+              onChange={(file) => setForm({...form, image_file: file})}
               disabled={submitting}
               helperText="Sélectionnez une image pour l'affiche du film"
+              showPreview={true}
             />
 
             <FormTextarea
