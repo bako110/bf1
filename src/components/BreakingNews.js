@@ -14,6 +14,7 @@ import ImageUpload from './ui/ImageUpload';
 export default function BreakingNews() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ title: '', category: '', description: '', image: '', author: '' });
   const [editId, setEditId] = useState(null);
@@ -31,7 +32,7 @@ export default function BreakingNews() {
       const data = await fetchBreakingNews();
       setItems(data);
     } catch (e) {
-      setError('Erreur lors du chargement des breaking news.');
+      setError('Erreur lors du chargement des actualités urgentes.');
     }
     setLoading(false);
   }
@@ -40,27 +41,30 @@ export default function BreakingNews() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSubmitting(true);
     try {
       if (editId) {
         await updateBreakingNews(editId, form);
-        setSuccess('Breaking news modifiée avec succès.');
+        setSuccess('Actualité urgente modifiée avec succès.');
       } else {
         await createBreakingNews(form);
-        setSuccess('Breaking news créée avec succès.');
+        setSuccess('Actualité urgente créée avec succès.');
       }
       handleClose();
       loadBreakingNews();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSubmitting(false);
     }
   }
 
   async function handleDelete(item) {
     const id = item.id || item._id;
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette breaking news ?')) {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette actualité urgente ?')) {
       try {
         await deleteBreakingNews(id);
-        setSuccess('Breaking news supprimée.');
+        setSuccess('Actualité urgente supprimée.');
         loadBreakingNews();
       } catch (e) {
         setError('Erreur lors de la suppression.');
@@ -109,14 +113,15 @@ export default function BreakingNews() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Breaking News"
+          title="Gestion des Actualités Urgentes"
           description="Créer et gérer les actualités urgentes"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
+              disabled={submitting}
             >
-              + Nouvelle Breaking News
+              + Nouvelle Actualité Urgente
             </Button>
           }
         />
@@ -124,7 +129,7 @@ export default function BreakingNews() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier la Breaking News' : 'Nouvelle Breaking News'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier l\'Actualité Urgente' : 'Nouvelle Actualité Urgente'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput
               label="Titre"
@@ -166,28 +171,40 @@ export default function BreakingNews() {
                 type="submit"
                 variant="primary"
                 fullWidth
+                disabled={submitting}
               >
-                {editId ? 'Mettre à jour' : 'Créer'}
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enregistrement...
+                  </span>
+                ) : (
+                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                )}
               </Button>
               <Button 
                 type="button"
                 variant="ghost"
                 fullWidth
                 onClick={handleClose}
+                disabled={submitting}
               >
-                Annuler
+                ❌ Annuler
               </Button>
             </div>
           </form>
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des breaking news..." />
+          <Loader size="lg" text="Chargement des actualités urgentes..." />
         ) : items.length === 0 ? (
           <EmptyState 
             icon="📰"
-            title="Aucune breaking news"
-            message="Créez votre première breaking news pour la voir apparaître ici."
+            title="Aucune actualité urgente"
+            message="Créez votre première actualité urgente pour la voir apparaître ici."
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">

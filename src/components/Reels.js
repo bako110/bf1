@@ -17,13 +17,9 @@ export default function Reels() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ 
-    video_url: '', 
     title: '', 
     username: '', 
-    description: '', 
-    likes: 0, 
-    comments: 0, 
-    shares: 0 
+    description: ''
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -115,10 +111,7 @@ export default function Reels() {
       video_url: item.video_url || '',
       title: item.title || '',
       username: item.username || '',
-      description: item.description || '',
-      likes: item.likes || 0,
-      comments: item.comments || 0,
-      shares: item.shares || 0
+      description: item.description || ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -131,10 +124,7 @@ export default function Reels() {
       video_url: '', 
       title: '', 
       username: '', 
-      description: '', 
-      likes: 0, 
-      comments: 0, 
-      shares: 0 
+      description: ''
     });
     setError('');
   }
@@ -199,35 +189,6 @@ export default function Reels() {
               rows={4}
               required
             />
-
-            <div className="grid grid-cols-3 gap-4">
-              <FormInput
-                label="Likes"
-                type="number"
-                placeholder="0"
-                value={form.likes}
-                onChange={e => setForm({...form, likes: parseInt(e.target.value) || 0})}
-                min="0"
-              />
-
-              <FormInput
-                label="Commentaires"
-                type="number"
-                placeholder="0"
-                value={form.comments}
-                onChange={e => setForm({...form, comments: parseInt(e.target.value) || 0})}
-                min="0"
-              />
-
-              <FormInput
-                label="Partages"
-                type="number"
-                placeholder="0"
-                value={form.shares}
-                onChange={e => setForm({...form, shares: parseInt(e.target.value) || 0})}
-                min="0"
-              />
-            </div>
 
             <div className="flex gap-3 pt-4 border-t border-gray-200">
               <Button 

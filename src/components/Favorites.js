@@ -73,16 +73,12 @@ export default function Favorites() {
     },
   ];
 
-  const actions = [
-    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Favoris"
-          description="Afficher et gérer les favoris utilisateurs"
+          title="Statistiques des Favoris"
+          description="Consulter les favoris utilisateurs"
         />
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
@@ -94,7 +90,7 @@ export default function Favorites() {
           <EmptyState icon="⭐" title="Aucun favori" message="Il n'y a pas encore de favoris à afficher." />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable columns={columns} data={items} actions={actions} />
+            <DataTable columns={columns} data={items} />
           </div>
         )}
       </div>

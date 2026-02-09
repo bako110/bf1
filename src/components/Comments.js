@@ -79,16 +79,12 @@ export default function Comments() {
     },
   ];
 
-  const actions = [
-    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Commentaires"
-          description="Modérer et gérer les commentaires utilisateurs"
+          title="Statistiques des Commentaires"
+          description="Consulter les commentaires utilisateurs"
         />
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
@@ -107,7 +103,6 @@ export default function Comments() {
             <DataTable 
               columns={columns}
               data={items}
-              actions={actions}
             />
           </div>
         )}

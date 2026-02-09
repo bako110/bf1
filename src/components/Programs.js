@@ -17,7 +17,6 @@ export default function Programs() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    channel_id: '',
     title: '',
     description: '',
     type: '',
@@ -85,14 +84,26 @@ export default function Programs() {
   }
 
   function handleEdit(program) {
+    // Fonction pour formater la date en heure locale pour datetime-local input
+    const formatDateTimeLocal = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      // Extraire les composants de date en heure locale
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     setForm({
-      channel_id: program.channel_id || '',
       title: program.title || '',
       description: program.description || '',
       type: program.type || '',
       category: program.category || '',
-      start_time: program.start_time ? new Date(program.start_time).toISOString().slice(0, 16) : '',
-      end_time: program.end_time ? new Date(program.end_time).toISOString().slice(0, 16) : '',
+      start_time: formatDateTimeLocal(program.start_time),
+      end_time: formatDateTimeLocal(program.end_time),
       image_url: program.image_url || '',
       host: program.host || ''
     });
@@ -106,7 +117,6 @@ export default function Programs() {
     setIsDrawerOpen(false);
     setEditId(null);
     setForm({
-      channel_id: '',
       title: '',
       description: '',
       type: '',
@@ -175,14 +185,6 @@ export default function Programs() {
                 <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un programme EPG complet.
               </p>
             </div>
-
-            <FormInput
-              label="ID de la Chaîne"
-              placeholder="ID de la chaîne (ex: 507f1f77bcf86cd799439011)"
-              value={form.channel_id}
-              onChange={e => setForm({...form, channel_id: e.target.value})}
-              helperText="L'identifiant de la chaîne TV associée"
-            />
 
             <FormInput
               label="Titre du Programme"

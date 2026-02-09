@@ -239,28 +239,6 @@ export default function Replays() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="Nombre de Vues"
-                type="number"
-                placeholder="0"
-                value={form.views}
-                onChange={e => setForm({...form, views: parseInt(e.target.value) || 0})}
-                min="0"
-              />
-
-              <FormInput
-                label="Note (0-5)"
-                type="number"
-                placeholder="4.5"
-                value={form.rating}
-                onChange={e => setForm({...form, rating: parseFloat(e.target.value) || 0})}
-                min="0"
-                max="5"
-                step="0.1"
-              />
-            </div>
-
             <FormTextarea
               label="Description"
               placeholder="Description détaillée du replay..."

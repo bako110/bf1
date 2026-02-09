@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPopularPrograms, createPopularProgram, updatePopularProgram, deletePopularProgram } from '../services/popularProgramsService';
 import Drawer from './Drawer';
+import Loader from './ui/Loader';
+import Alert from './ui/Alert';
+import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
+import Button from './ui/Button';
+import FormInput from './ui/FormInput';
+import FormTextarea from './ui/FormTextarea';
+import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 
 export default function PopularPrograms() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, rating: 0, image: '' });
+  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '' });
+  const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -32,6 +41,7 @@ export default function PopularPrograms() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSubmitting(true);
     try {
       if (editId) {
         await updatePopularProgram(editId, form);
@@ -40,13 +50,20 @@ export default function PopularPrograms() {
         await createPopularProgram(form);
         setSuccess('Programme créé avec succès.');
       }
-      setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, rating: 0, image: '' });
-      setEditId(null);
-      setIsDrawerOpen(false);
+      handleClose();
       loadPrograms();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde.');
+      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSubmitting(false);
     }
+  }
+
+  function handleClose() {
+    setIsDrawerOpen(false);
+    setEditId(null);
+    setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '' });
+    setError('');
   }
 
   async function handleDelete(item) {
@@ -73,73 +90,168 @@ export default function PopularPrograms() {
       category: item.category || '',
       schedule: item.schedule || '',
       episodes: item.episodes || 0,
-      rating: item.rating || 0,
       image: item.image || ''
     });
-    setEditId(item.id);
+    setEditId(item.id || item._id);
     setIsDrawerOpen(true);
+    setError('');
+    setSuccess('');
   }
 
+  const columns = [
+    { key: 'title', label: 'Titre' },
+    { key: 'category', label: 'Catégorie' },
+    { key: 'schedule', label: 'Horaire' },
+    { 
+      key: 'episodes', 
+      label: 'Épisodes',
+      render: (val) => val || 0
+    },
+    { 
+      key: 'rating', 
+      label: 'Note',
+      render: (val) => val ? `⭐ ${val.toFixed(1)}` : '-'
+    }
+  ];
+
+  const actions = [
+    { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+  ];
+
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-black mb-2">Programmes Populaires</h2>
-            <p className="text-gray-600">Gérer les programmes les plus populaires</p>
-          </div>
-          <button onClick={() => setIsDrawerOpen(true)} className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800">+ Nouveau Programme</button>
-        </div>
+        <PageHeader 
+          title="Gestion des Programmes Populaires"
+          description="Créer et gérer les programmes les plus populaires"
+          action={
+            <Button 
+              onClick={() => setIsDrawerOpen(true)}
+              variant="primary"
+              disabled={submitting}
+            >
+              + Nouveau Programme
+            </Button>
+          }
+        />
 
-        {error && <div className="mb-6 bg-red-50 border border-red-300 text-red-800 p-4">{error}</div>}
-        {success && <div className="mb-6 bg-green-50 border border-green-300 text-green-800 p-4">{success}</div>}
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={() => {setIsDrawerOpen(false); setEditId(null);}} title={editId ? 'Modifier' : 'Nouveau Programme'}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input placeholder="Titre" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required className="w-full px-4 py-2 border border-gray-300" />
-            <textarea placeholder="Description" value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} required className="w-full px-4 py-2 border border-gray-300" />
-            <input placeholder="Horaire (ex: 20:00)" value={form.schedule} onChange={e => setForm({...form, schedule: e.target.value})} required className="w-full px-4 py-2 border border-gray-300" />
-            <input placeholder="Nombre d'épisodes" type="number" value={form.episodes} onChange={e => setForm({...form, episodes: parseInt(e.target.value) || 0})} required min="0" className="w-full px-4 py-2 border border-gray-300" />
-            <input placeholder="Catégorie" value={form.category} onChange={e => setForm({...form, category: e.target.value})} required className="w-full px-4 py-2 border border-gray-300" />
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier le Programme' : '➕ Nouveau Programme'}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
+              <p className="text-sm text-purple-800">
+                <strong>💡 Astuce :</strong> Les programmes populaires apparaissent en vedette dans l'application.
+              </p>
+            </div>
+
+            <FormInput
+              label="Titre du Programme"
+              placeholder="Le 20H"
+              value={form.title}
+              onChange={e => setForm({...form, title: e.target.value})}
+              required
+            />
+
+            <FormInput
+              label="Catégorie"
+              placeholder="Actualités, Sport, Culture..."
+              value={form.category}
+              onChange={e => setForm({...form, category: e.target.value})}
+              required
+            />
+
+            <FormInput
+              label="Horaire"
+              placeholder="20:00"
+              value={form.schedule}
+              onChange={e => setForm({...form, schedule: e.target.value})}
+              required
+              helperText="Format: HH:MM"
+            />
+
+            <FormInput
+              label="Nombre d'Épisodes"
+              type="number"
+              placeholder="0"
+              value={form.episodes}
+              onChange={e => setForm({...form, episodes: parseInt(e.target.value) || 0})}
+              required
+              min="0"
+            />
+
+            <FormTextarea
+              label="Description"
+              placeholder="Description détaillée du programme..."
+              value={form.description}
+              onChange={e => setForm({...form, description: e.target.value})}
+              rows={4}
+              required
+            />
+
             <ImageUpload
               label="Image du Programme"
               value={form.image}
               onChange={(url) => setForm({...form, image: url})}
+              disabled={submitting}
               helperText="Sélectionnez une image pour le programme"
             />
-            <p className="text-sm text-gray-500">Note: La note est générée automatiquement par les utilisateurs</p>
-            <button type="submit" className="w-full bg-black text-white py-2 font-semibold">Enregistrer</button>
+
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+              <p className="text-sm text-yellow-800">
+                <strong>ℹ️ Note :</strong> La note est générée automatiquement par les utilisateurs.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <Button 
+                type="submit"
+                variant="primary"
+                fullWidth
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enregistrement...
+                  </span>
+                ) : (
+                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                )}
+              </Button>
+              <Button 
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={handleClose}
+                disabled={submitting}
+              >
+                ❌ Annuler
+              </Button>
+            </div>
           </form>
         </Drawer>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 border-4 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            <p className="text-gray-600 mt-4">Chargement...</p>
-          </div>
+          <Loader size="lg" text="Chargement des programmes populaires..." />
+        ) : items.length === 0 ? (
+          <EmptyState 
+            icon="⭐"
+            title="Aucun programme populaire"
+            message="Créez votre premier programme populaire pour le voir apparaître ici."
+          />
         ) : (
-          <div className="border border-gray-300 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 border-b border-gray-300">
-                <tr>
-                  <th className="px-6 py-3 font-semibold">Titre</th>
-                  <th className="px-6 py-3 font-semibold">Catégorie</th>
-                  <th className="px-6 py-3 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-300 hover:bg-gray-50">
-                    <td className="px-6 py-3">{item.title}</td>
-                    <td className="px-6 py-3">{item.category}</td>
-                    <td className="px-6 py-3 space-x-2">
-                      <button onClick={() => handleEdit(item)} className="text-black hover:underline">Modifier</button>
-                      <button onClick={() => handleDelete(item)} className="text-red-600 hover:underline">Supprimer</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <DataTable 
+              columns={columns}
+              data={items}
+              actions={actions}
+            />
           </div>
         )}
       </div>
