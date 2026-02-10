@@ -6,30 +6,20 @@ export async function fetchReels(page = 1, limit = 20) {
 }
 
 export async function createReel(reel) {
-  // Déterminer si c'est FormData (fichier) ou JSON (URL)
-  const isFormData = reel instanceof FormData;
-  
-  const config = isFormData ? {
+  const res = await api.post('/reels', reel, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Content-Type': 'application/json',
     },
-  } : {};
-  
-  const res = await api.post('/reels', reel, config);
+  });
   return res.data;
 }
 
 export async function updateReel(id, reel) {
-  // Déterminer si c'est FormData (fichier) ou JSON (URL)
-  const isFormData = reel instanceof FormData;
-  
-  const config = isFormData ? {
+  const res = await api.patch(`/reels/${id}`, reel, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Content-Type': 'application/json',
     },
-  } : {};
-  
-  const res = await api.patch(`/reels/${id}`, reel, config);
+  });
   return res.data;
 }
 

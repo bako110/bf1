@@ -11,13 +11,14 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function TrendingShows() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', category: '', image: '', description: '', host: '', episodes: 0, views: 0, rating: 0 });
+  const [form, setForm] = useState({ title: '', category: '', image: '', description: '', host: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -26,6 +27,8 @@ export default function TrendingShows() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   useEffect(() => {
     loadTrendingShows();
@@ -88,16 +91,23 @@ export default function TrendingShows() {
     }
   }
 
-  async function handleDelete(item) {
-    const itemId = item.id || item._id;
-    if (window.confirm('Supprimer cette émission ?')) {
-      try {
-        await deleteTrendingShow(itemId);
-        setSuccess('Émission supprimée.');
-        loadTrendingShows();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    const itemId = itemToDelete.id || itemToDelete._id;
+    try {
+      await deleteTrendingShow(itemId);
+      setSuccess('Émission supprimée.');
+      loadTrendingShows();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -107,10 +117,7 @@ export default function TrendingShows() {
       category: item.category || '',
       image: item.image || '',
       description: item.description || '',
-      host: item.host || '',
-      episodes: item.episodes || 0,
-      views: item.views || 0,
-      rating: item.rating || 0
+      host: item.host || ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -119,7 +126,7 @@ export default function TrendingShows() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', category: '', image: '', description: '', host: '', episodes: 0, views: 0, rating: 0 });
+    setForm({ title: '', category: '', image: '', description: '', host: '' });
     setError('');
   }
 
@@ -127,13 +134,6 @@ export default function TrendingShows() {
     { key: 'title', label: 'Titre' },
     { key: 'category', label: 'Catégorie' },
     { key: 'host', label: 'Animateur' },
-    { key: 'episodes', label: 'Épisodes' },
-    { key: 'views', label: 'Vues' },
-    { 
-      key: 'rating', 
-      label: 'Note',
-      render: (val) => `${val}/5`
-    },
   ];
 
   const actions = [
@@ -222,38 +222,6 @@ export default function TrendingShows() {
               helperText="Sélectionnez une image pour l'émission"
             />
 
-            <div className="grid grid-cols-3 gap-4">
-              <FormInput
-                label="Nombre d'Épisodes"
-                type="number"
-                placeholder="10"
-                value={form.episodes}
-                onChange={e => setForm({...form, episodes: parseInt(e.target.value) || 0})}
-                min="0"
-                required
-              />
-
-              <FormInput
-                label="Nombre de Vues"
-                type="number"
-                placeholder="0"
-                value={form.views}
-                onChange={e => setForm({...form, views: parseInt(e.target.value) || 0})}
-                min="0"
-              />
-
-              <FormInput
-                label="Note (0-5)"
-                type="number"
-                placeholder="4.5"
-                value={form.rating}
-                onChange={e => setForm({...form, rating: parseFloat(e.target.value) || 0})}
-                min="0"
-                max="5"
-                step="0.1"
-              />
-            </div>
-
             <FormTextarea
               label="Description"
               placeholder="Description de l'émission..."
@@ -325,6 +293,21 @@ export default function TrendingShows() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer l'Émission"
+        message={`Êtes-vous sûr de vouloir supprimer l'émission "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

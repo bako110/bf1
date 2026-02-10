@@ -26,10 +26,10 @@ export default function AdminLogin({ onLogin }) {
       <div className="w-full max-w-md">
         <div className="bg-white border border-gray-300 shadow-lg">
           {/* Header */}
-          <div className="bg-black text-white p-8 text-center">
-            <div className="text-4xl font-black tracking-wider mb-3">BF1</div>
-            <h1 className="text-xl font-bold tracking-wide">Administration</h1>
-            <p className="text-sm text-gray-300 mt-2">Connexion sécurisée</p>
+          <div className="bg-white border-b border-gray-300 p-8 text-center">
+            <div className="text-4xl font-black tracking-wider mb-3 text-black">BF1</div>
+            <h1 className="text-xl font-bold tracking-wide text-black">Administration</h1>
+            <p className="text-sm text-gray-600 mt-2">Connexion sécurisée</p>
           </div>
 
           {/* Form */}

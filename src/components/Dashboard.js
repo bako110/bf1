@@ -36,9 +36,6 @@ export default function Dashboard() {
           trendingShows: { total: 0, growth: 0 },
           popularPrograms: { total: 0, growth: 0 },
           subscriptions: { total: 0, growth: 0 },
-          comments: { total: 0, growth: 0 },
-          likes: { total: 0, growth: 0 },
-          favorites: { total: 0, growth: 0 },
         });
       }
       setLoading(false);
@@ -58,9 +55,6 @@ export default function Dashboard() {
     { key: 'trendingShows', label: 'Émissions Tendances', color: 'yellow' },
     { key: 'popularPrograms', label: 'Programmes Populaires', color: 'green' },
     { key: 'subscriptions', label: 'Abonnements', color: 'green' },
-    { key: 'comments', label: 'Commentaires', color: 'blue' },
-    { key: 'likes', label: 'Likes', color: 'red' },
-    { key: 'favorites', label: 'Favoris', color: 'yellow' },
   ];
 
   const maxValue = stats ? Math.max(...Object.values(stats).map(s => s.total)) : 0;

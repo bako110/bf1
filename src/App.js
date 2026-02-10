@@ -31,6 +31,7 @@ import Contact from './components/Contact';
 import Programs from './components/Programs';
 import SubscriptionPlans from './components/SubscriptionPlans';
 import Archives from './components/Archives';
+import LiveControlScreen from './screens/LiveControlScreen';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -87,6 +88,7 @@ function App() {
           {section === 'programs' && <Programs />}
           {section === 'subscriptionPlans' && <SubscriptionPlans />}
           {section === 'archives' && <Archives />}
+          {section === 'liveControl' && <LiveControlScreen />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}

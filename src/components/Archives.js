@@ -24,10 +24,10 @@ export default function Archives() {
     category: '', 
     thumbnail: '', 
     video_url: '', 
+    video_file: null,
+    video_source: 'file',
     duration_minutes: 0,
     price: 0,
-    guest_name: '',
-    guest_role: '',
     archived_date: new Date().toISOString().split('T')[0]
   });
   const [editId, setEditId] = useState(null);
@@ -40,6 +40,10 @@ export default function Archives() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  
+  // États pour l'upload vidéo
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
 
   useEffect(() => {
     loadArchives();
@@ -130,6 +134,51 @@ export default function Archives() {
     }
   }
 
+  // Upload automatique vidéo
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    setForm({...form, video_file: file});
+    setUploadingVideo(true);
+    setUploadVideoProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const videoUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, video_url: videoUrl}));
+          if (response.data?.duration) {
+            setForm(prev => ({...prev, duration_minutes: Math.ceil(response.data.duration / 60)}));
+          }
+        }
+        setUploadingVideo(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload vidéo');
+        setUploadingVideo(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingVideo(false);
+    }
+  }
+
   function handleEdit(item) {
     setForm({ 
       title: item.title || '', 
@@ -137,10 +186,10 @@ export default function Archives() {
       category: item.category || '',
       thumbnail: item.thumbnail || '',
       video_url: item.video_url || '',
+      video_file: null,
+      video_source: item.video_url ? 'url' : 'file',
       duration_minutes: item.duration_minutes || 0,
       price: item.price || 0,
-      guest_name: item.guest_name || '',
-      guest_role: item.guest_role || '',
       archived_date: item.archived_date ? new Date(item.archived_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
     setEditId(item.id || item._id);
@@ -158,13 +207,15 @@ export default function Archives() {
       category: '', 
       thumbnail: '', 
       video_url: '', 
+      video_file: null,
+      video_source: 'file',
       duration_minutes: 0,
       price: 0,
-      guest_name: '',
-      guest_role: '',
       archived_date: new Date().toISOString().split('T')[0]
     });
     setError('');
+    setUploadingVideo(false);
+    setUploadVideoProgress(0);
   }
 
   const columns = [
@@ -281,13 +332,78 @@ export default function Archives() {
             helperText="URL de l'image de couverture"
           />
 
-          <FormInput
-            label="URL Vidéo"
-            placeholder="https://..."
-            value={form.video_url}
-            onChange={e => setForm({...form, video_url: e.target.value})}
-            required
-          />
+          {/* Sélecteur de source vidéo */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
+            <div className="flex gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="video_source"
+                  value="file"
+                  checked={form.video_source === 'file'}
+                  onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="video_source"
+                  value="url"
+                  checked={form.video_source === 'url'}
+                  onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+              </label>
+            </div>
+
+            {/* Option Fichier */}
+            {form.video_source === 'file' && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Fichier Vidéo <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  type="file" 
+                  accept="video/*"
+                  onChange={e => handleVideoSelect(e.target.files[0])}
+                  disabled={uploadingVideo}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {uploadingVideo && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
+                      <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                    </div>
+                  </div>
+                )}
+                {form.video_url && !uploadingVideo && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Option URL */}
+            {form.video_source === 'url' && (
+              <FormInput
+                label="URL de la Vidéo"
+                placeholder="https://exemple.com/video.mp4"
+                type="url"
+                value={form.video_url}
+                onChange={e => setForm({...form, video_url: e.target.value})}
+                required
+              />
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <FormInput
@@ -308,24 +424,6 @@ export default function Archives() {
               onChange={e => setForm({...form, price: e.target.value})}
               min="0"
               helperText="Prix pour achat individuel"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Nom de l'invité"
-              placeholder="Nom de l'invité"
-              value={form.guest_name}
-              onChange={e => setForm({...form, guest_name: e.target.value})}
-              required
-            />
-
-            <FormInput
-              label="Rôle de l'invité"
-              placeholder="Ex: Expert, Consultant, Spécialiste"
-              value={form.guest_role}
-              onChange={e => setForm({...form, guest_role: e.target.value})}
               required
             />
           </div>

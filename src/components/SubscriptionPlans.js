@@ -9,6 +9,7 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import EmptyState from './ui/EmptyState';
 import Pagination from './ui/Pagination';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function SubscriptionPlans() {
   const [plans, setPlans] = useState([]);
@@ -31,6 +32,8 @@ export default function SubscriptionPlans() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   useEffect(() => {
     loadPlans();
@@ -99,18 +102,25 @@ export default function SubscriptionPlans() {
     }
   }
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    const id = itemToDelete.id || itemToDelete._id;
     setError('');
     setSuccess('');
-    if (window.confirm('Supprimer ce plan d\'abonnement ?')) {
-      try {
-        await deleteSubscriptionPlan(id);
-        setSuccess('Plan supprimé.');
-        loadPlans();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+    try {
+      await deleteSubscriptionPlan(id);
+      setSuccess('Plan supprimé.');
+      loadPlans();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -347,6 +357,21 @@ export default function SubscriptionPlans() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer le Plan d'Abonnement"
+        message={`Êtes-vous sûr de vouloir supprimer le plan "${itemToDelete?.name}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

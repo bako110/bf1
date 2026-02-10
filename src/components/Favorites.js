@@ -28,6 +28,7 @@ export default function Favorites() {
     setLoading(false);
   }
 
+  /* Fonction de suppression (à activer si nécessaire)
   async function handleDelete(item) {
     const id = item.id || item._id;
     if (window.confirm('Supprimer ce favori ?')) {
@@ -40,6 +41,7 @@ export default function Favorites() {
       }
     }
   }
+  */
 
   const columns = [
     { 

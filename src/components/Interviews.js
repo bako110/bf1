@@ -11,12 +11,13 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function Interviews() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', guest_name: '', guest_role: '', description: '', image: '', duration_minutes: 0, published_at: '' });
+  const [form, setForm] = useState({ title: '', guest_name: '', guest_role: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', duration_minutes: 0, published_at: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -25,6 +26,14 @@ export default function Interviews() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  
+  // États pour l'upload
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadImageProgress, setUploadImageProgress] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   useEffect(() => {
     loadInterviews();
@@ -65,15 +74,114 @@ export default function Interviews() {
     }
   };
 
+  // Upload automatique vidéo
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    setForm({...form, video_file: file});
+    setUploadingVideo(true);
+    setUploadVideoProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const videoUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, video_url: videoUrl}));
+          if (response.data?.duration) {
+            setForm(prev => ({...prev, duration_minutes: Math.ceil(response.data.duration / 60)}));
+          }
+        }
+        setUploadingVideo(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload vidéo');
+        setUploadingVideo(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingVideo(false);
+    }
+  }
+
+  // Upload automatique image
+  async function handleImageSelect(file) {
+    if (!file) return;
+    setUploadingImage(true);
+    setUploadImageProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadImageProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const imageUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, image: imageUrl}));
+        }
+        setUploadingImage(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload image');
+        setUploadingImage(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/image');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingImage(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (uploadingVideo || uploadingImage) {
+      setError('Veuillez attendre la fin des uploads');
+      return;
+    }
+    
     try {
       const payload = {
-        ...form,
-        duration_minutes: parseInt(form.duration_minutes) || 0
+        title: form.title,
+        guest_name: form.guest_name,
+        guest_role: form.guest_role,
+        description: form.description,
+        image: form.image || null,
+        video_url: form.video_url || null,
+        duration_minutes: parseInt(form.duration_minutes) || 0,
+        published_at: form.published_at || null
       };
+      
       if (editId) {
         await updateInterview(editId, payload);
         setSuccess('Interview modifiée avec succès.');
@@ -91,22 +199,33 @@ export default function Interviews() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', guest_name: '', guest_role: '', description: '', image: '', duration_minutes: 0, published_at: '' });
+    setForm({ title: '', guest_name: '', guest_role: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', duration_minutes: 0, published_at: '' });
     setError('');
+    setUploadingVideo(false);
+    setUploadVideoProgress(0);
+    setUploadingImage(false);
+    setUploadImageProgress(0);
   }
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    const id = itemToDelete.id || itemToDelete._id;
     setError('');
     setSuccess('');
-    if (window.confirm('Supprimer cette interview ?')) {
-      try {
-        await deleteInterview(id);
-        setSuccess('Interview supprimée.');
-        loadInterviews();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+    try {
+      await deleteInterview(id);
+      setSuccess('Interview supprimée.');
+      loadInterviews();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -117,8 +236,11 @@ export default function Interviews() {
       guest_role: item.guest_role || '',
       description: item.description || '',
       image: item.image || '',
-      duration_minutes: item.duration_minutes || '',
-      published_at: item.published_at || ''
+      video_url: item.video_url || '',
+      video_file: null,
+      video_source: item.video_url ? 'url' : 'file',
+      duration_minutes: item.duration_minutes || 0,
+      published_at: item.published_at ? new Date(item.published_at).toISOString().split('T')[0] : ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -183,12 +305,105 @@ export default function Interviews() {
             <FormInput label="Nom de l'invité" placeholder="Nom complet" value={form.guest_name} onChange={e => setForm({...form, guest_name: e.target.value})} required />
             <FormInput label="Rôle/Fonction" placeholder="Ex: Présentateur, Artiste, etc." value={form.guest_role} onChange={e => setForm({...form, guest_role: e.target.value})} required />
             <FormTextarea label="Description" placeholder="Description ou contenu..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} required />
-            <ImageUpload
-              label="Image de l'Interview"
-              value={form.image}
-              onChange={(url) => setForm({...form, image: url})}
-              helperText="Sélectionnez une image pour l'interview"
-            />
+            
+            {/* Sélecteur de source vidéo */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="video_source"
+                    value="file"
+                    checked={form.video_source === 'file'}
+                    onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="video_source"
+                    value="url"
+                    checked={form.video_source === 'url'}
+                    onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                </label>
+              </div>
+
+              {/* Option Fichier */}
+              {form.video_source === 'file' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Fichier Vidéo</label>
+                  <input 
+                    type="file" 
+                    accept="video/*"
+                    onChange={e => handleVideoSelect(e.target.files[0])}
+                    disabled={uploadingVideo}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {uploadingVideo && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
+                        <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                      </div>
+                    </div>
+                  )}
+                  {form.video_url && !uploadingVideo && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Option URL */}
+              {form.video_source === 'url' && (
+                <FormInput
+                  label="URL de la Vidéo"
+                  placeholder="https://exemple.com/video.mp4"
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => setForm({...form, video_url: e.target.value})}
+                />
+              )}
+            </div>
+
+            {/* Upload Image */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Image de l'Interview</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={e => handleImageSelect(e.target.files[0])}
+                disabled={uploadingImage}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+              />
+              {uploadingImage && (
+                <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-purple-800 font-medium">Upload image...</p>
+                    <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
+                  </div>
+                  <div className="w-full bg-purple-200 rounded-full h-2">
+                    <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
+                  </div>
+                </div>
+              )}
+              {form.image && !uploadingImage && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                  <p className="text-sm text-green-800">Image uploadée ✓</p>
+                </div>
+              )}
+            </div>
+
             <FormInput label="Durée (minutes)" placeholder="30" value={form.duration_minutes} onChange={e => setForm({...form, duration_minutes: e.target.value})} type="number" min="1" max="600" required />
             <FormInput label="Date de publication" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} type="datetime-local" />
             <div className="flex gap-3 pt-2">
@@ -220,6 +435,21 @@ export default function Interviews() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer l'Interview"
+        message={`Êtes-vous sûr de vouloir supprimer l'interview "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

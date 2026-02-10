@@ -11,6 +11,7 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import FileUpload from './ui/FileUpload';
 import Pagination from './ui/Pagination';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function Reels() {
   const [items, setItems] = useState([]);
@@ -22,6 +23,7 @@ export default function Reels() {
     description: '',
     video_file: null,
     video_url: '',
+    thumbnail_url: '',
     video_source: 'file' // 'file' ou 'url'
   });
   const [editId, setEditId] = useState(null);
@@ -32,6 +34,14 @@ export default function Reels() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  
+  // États pour l'upload
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadImageProgress, setUploadImageProgress] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const columns = [
     { key: 'title', label: 'Titre', render: (val) => String(val || '') },
@@ -101,118 +111,142 @@ export default function Reels() {
     }
   };
 
+  // Upload automatique vidéo
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    setForm({...form, video_file: file});
+    setUploadingVideo(true);
+    setUploadVideoProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const videoUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, video_url: videoUrl}));
+        }
+        setUploadingVideo(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload vidéo');
+        setUploadingVideo(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingVideo(false);
+    }
+  }
+
+  // Upload automatique image
+  async function handleImageSelect(file) {
+    if (!file) return;
+    setUploadingImage(true);
+    setUploadImageProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadImageProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const imageUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, thumbnail_url: imageUrl}));
+        }
+        setUploadingImage(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload image');
+        setUploadingImage(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/image');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingImage(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (uploadingVideo || uploadingImage) {
+      setError('Veuillez attendre la fin des uploads');
+      return;
+    }
+    
     setSubmitting(true);
     
     try {
-      // Validation des données
-      if (!form.title.trim()) {
-        setError('Le titre est requis');
-        setSubmitting(false);
-        return;
-      }
-      
-      if (!form.description.trim()) {
-        setError('La description est requise');
-        setSubmitting(false);
-        return;
-      }
-      
-      if (form.video_source === 'file' && !form.video_file) {
-        setError('Veuillez sélectionner un fichier vidéo');
-        setSubmitting(false);
-        return;
-      }
-      
-      if (form.video_source === 'url' && !form.video_url.trim()) {
-        setError('Veuillez entrer une URL vidéo valide');
-        setSubmitting(false);
-        return;
-      }
-      
-      let data;
-      
-      if (form.video_source === 'file') {
-        // Option fichier : utiliser FormData
-        const formData = new FormData();
-        formData.append('title', form.title);
-        formData.append('description', form.description);
-        
-        if (form.video_file) {
-          formData.append('video_file', form.video_file);
-        }
-        
-        data = formData;
-      } else {
-        // Option URL : utiliser JSON
-        data = {
-          title: form.title,
-          description: form.description,
-          video_url: form.video_url
-        };
-      }
-      
-      // Debug: afficher ce qui est envoyé
-      console.log('Envoi des données:', data);
-      console.log('Type de données:', data instanceof FormData ? 'FormData' : 'JSON');
+      const reelData = {
+        title: form.title,
+        description: form.description,
+        video_url: form.video_url || null,
+        thumbnail_url: form.thumbnail_url || null
+      };
       
       if (editId) {
-        await updateReel(editId, data);
+        await updateReel(editId, reelData);
         setSuccess('Reel modifié avec succès.');
       } else {
-        await createReel(data);
+        await createReel(reelData);
         setSuccess('Reel créé avec succès.');
       }
       handleClose();
       loadReels();
     } catch (e) {
-      console.error('Erreur détaillée:', e);
-      console.error('Response data:', e.response?.data);
-      console.error('Response status:', e.response?.status);
-      
-      // Logging spécifique pour les erreurs 422
-      if (e.response?.status === 422) {
-        console.error('Detail content:', e.response?.data?.detail);
-        console.error('Detail type:', typeof e.response?.data?.detail);
-        console.error('Is array?', Array.isArray(e.response?.data?.detail));
-      }
-      
-      let errorMessage = e.response?.data?.message || 
-                   e.message || 
-                   'Erreur lors de la sauvegarde';
-      
-      // Gérer les erreurs de validation 422 avec détails
-      if (e.response?.status === 422 && e.response?.data?.detail) {
-        const details = e.response.data.detail;
-        if (Array.isArray(details)) {
-          // Si c'est un tableau d'erreurs de validation
-          errorMessage = details.map(err => 
-            typeof err === 'object' ? err.msg || err.message : String(err)
-          ).join(', ');
-        } else if (typeof details === 'string') {
-          errorMessage = details;
-        }
-      }
-      
-      setError('Erreur: ' + errorMessage);
+      setError('Erreur: ' + (e.response?.data?.detail || e.message));
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleDelete(item) {
-    const itemId = item.id || item._id;
-    if (window.confirm('Êtes-vous sûr ?')) {
-      try {
-        await deleteReel(itemId);
-        setSuccess('Reel supprimé avec succès.');
-        loadReels();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    const itemId = itemToDelete.id || itemToDelete._id;
+    try {
+      await deleteReel(itemId);
+      setSuccess('Reel supprimé avec succès.');
+      loadReels();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -222,6 +256,7 @@ export default function Reels() {
       description: item.description || '',
       video_file: null,
       video_url: item.video_url || '',
+      thumbnail_url: item.thumbnail_url || '',
       video_source: item.video_url ? 'url' : 'file'
     });
     setEditId(item.id || item._id);
@@ -230,6 +265,10 @@ export default function Reels() {
 
   function handleClose() {
     setIsDrawerOpen(false);
+    setUploadingVideo(false);
+    setUploadVideoProgress(0);
+    setUploadingImage(false);
+    setUploadImageProgress(0);
     setEditId(null);
     setForm({ 
       title: '', 
@@ -329,30 +368,65 @@ export default function Reels() {
                 </label>
               </div>
 
-              {/* Option Fichier */}
-              {form.video_source === 'file' && (
-                <FileUpload
-                  label="Fichier Vidéo"
+              {/* Upload Vidéo */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Fichier Vidéo <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  type="file" 
                   accept="video/*"
-                  maxSize={50 * 1024 * 1024} // 50MB
-                  value={form.video_file}
-                  onChange={(file) => setForm({...form, video_file: file})}
-                  disabled={submitting}
-                  helperText="Sélectionnez un fichier vidéo (MP4, WebM, OGG)"
+                  onChange={e => handleVideoSelect(e.target.files[0])}
+                  disabled={uploadingVideo}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
-              )}
+                {uploadingVideo && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
+                      <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                    </div>
+                  </div>
+                )}
+                {form.video_url && !uploadingVideo && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-800">Vidéo uploadée ✓</p>
+                  </div>
+                )}
+              </div>
 
-              {/* Option URL */}
-              {form.video_source === 'url' && (
-                <FormInput
-                  label="URL de la Vidéo"
-                  placeholder="https://exemple.com/video.mp4"
-                  type="url"
-                  value={form.video_url}
-                  onChange={e => setForm({...form, video_url: e.target.value})}
-                  required
+              {/* Upload Miniature */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Miniature (optionnel)
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={e => handleImageSelect(e.target.files[0])}
+                  disabled={uploadingImage}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
                 />
-              )}
+                {uploadingImage && (
+                  <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-purple-800 font-medium">Upload image...</p>
+                      <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
+                    </div>
+                    <div className="w-full bg-purple-200 rounded-full h-2">
+                      <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
+                    </div>
+                  </div>
+                )}
+                {form.thumbnail_url && !uploadingImage && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-800">Miniature uploadée ✓</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <FormTextarea
@@ -418,6 +492,21 @@ export default function Reels() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer le Reel"
+        message={`Êtes-vous sûr de vouloir supprimer le reel "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

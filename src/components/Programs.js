@@ -11,6 +11,7 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function Programs() {
   const [programs, setPrograms] = useState([]);
@@ -35,6 +36,8 @@ export default function Programs() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   useEffect(() => {
     loadPrograms();
@@ -97,18 +100,25 @@ export default function Programs() {
     }
   }
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    const id = itemToDelete.id || itemToDelete._id;
     setError('');
     setSuccess('');
-    if (window.confirm('Supprimer ce programme ?')) {
-      try {
-        await deleteProgram(id);
-        setSuccess('Programme supprimé.');
-        loadPrograms();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+    try {
+      await deleteProgram(id);
+      setSuccess('Programme supprimé.');
+      loadPrograms();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -363,6 +373,21 @@ export default function Programs() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer le Programme"
+        message={`Êtes-vous sûr de vouloir supprimer le programme "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }

@@ -17,7 +17,7 @@ export async function uploadMovieImage(file) {
 export async function createMovie(movie) {
   const res = await api.post('/movies', movie, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Content-Type': 'application/json',
     },
   });
   return res.data;
@@ -26,7 +26,7 @@ export async function createMovie(movie) {
 export async function updateMovie(id, movie) {
   const res = await api.put(`/movies/${id}`, movie, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Content-Type': 'application/json',
     },
   });
   return res.data;

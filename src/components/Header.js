@@ -148,17 +148,6 @@ export default function Header({ onLogout, onSectionChange }) {
                     )}
                   </div>
                 )}
-                <div className="p-2">
-                  <div className="border-t border-gray-200 my-2"></div>
-                  <button 
-                    onClick={() => {
-                      if (onLogout) onLogout();
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-black font-semibold hover:bg-gray-100 transition-colors"
-                  >
-                    Déconnexion
-                  </button>
-                </div>
               </div>
             )}
           </div>

@@ -25,7 +25,10 @@ export default function Movies() {
     release_date: '',
     duration: 0,
     video_file: null,
+    video_url: '',
+    video_source: 'file',
     image_file: null,
+    image_url: '',
     is_premium: false
   });
   const [editId, setEditId] = useState(null);
@@ -38,6 +41,12 @@ export default function Movies() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+  
+  // États pour l'upload
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadImageProgress, setUploadImageProgress] = useState(0);
 
   useEffect(() => {
     loadMovies();
@@ -78,35 +87,122 @@ export default function Movies() {
     }
   };
 
+  // Upload automatique vidéo
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    setForm({...form, video_file: file});
+    setUploadingVideo(true);
+    setUploadVideoProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const videoUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, video_url: videoUrl}));
+          if (response.data?.duration) {
+            setForm(prev => ({...prev, duration: Math.ceil(response.data.duration / 60)}));
+          }
+        }
+        setUploadingVideo(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload vidéo');
+        setUploadingVideo(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingVideo(false);
+    }
+  }
+
+  // Upload automatique image
+  async function handleImageSelect(file) {
+    if (!file) return;
+    setForm({...form, image_file: file});
+    setUploadingImage(true);
+    setUploadImageProgress(0);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadImageProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const imageUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, image_url: imageUrl}));
+        }
+        setUploadingImage(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur upload image');
+        setUploadingImage(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/image');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    } catch (err) {
+      setError('Erreur: ' + err.message);
+      setUploadingImage(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (uploadingVideo || uploadingImage) {
+      setError('Veuillez attendre la fin des uploads');
+      return;
+    }
+    
     setSubmitting(true);
     
     try {
-      // Créer FormData pour l'upload de fichiers
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('description', form.description);
-      formData.append('genre', JSON.stringify(form.genre));
-      formData.append('release_date', form.release_date);
-      formData.append('duration', form.duration);
-      formData.append('is_premium', form.is_premium);
-      
-      if (form.video_file) {
-        formData.append('video_file', form.video_file);
-      }
-      
-      if (form.image_file) {
-        formData.append('image_file', form.image_file);
-      }
+      const movieData = {
+        title: form.title,
+        description: form.description,
+        genre: form.genre,
+        release_date: form.release_date,
+        duration: parseInt(form.duration) || 0,
+        video_url: form.video_url || null,
+        image_url: form.image_url || null,
+        is_premium: form.is_premium
+      };
       
       if (editId) {
-        await updateMovie(editId, formData);
+        await updateMovie(editId, movieData);
         setSuccess('Film modifié avec succès.');
       } else {
-        await createMovie(formData);
+        await createMovie(movieData);
         setSuccess('Film créé avec succès.');
       }
       handleCloseDrawer();
@@ -148,6 +244,8 @@ export default function Movies() {
       release_date: movie.release_date ? new Date(movie.release_date).toISOString().split('T')[0] : '',
       duration: movie.duration || 0,
       video_file: null,
+      video_url: movie.video_url || '',
+      video_source: movie.video_url ? 'url' : 'file',
       image_file: null,
       is_premium: movie.is_premium || false
     });
@@ -166,10 +264,17 @@ export default function Movies() {
       release_date: '',
       duration: 0,
       video_file: null,
+      video_url: '',
+      video_source: 'file',
       image_file: null,
+      image_url: '',
       is_premium: false
     });
     setError('');
+    setUploadingVideo(false);
+    setUploadVideoProgress(0);
+    setUploadingImage(false);
+    setUploadImageProgress(0);
   }
 
   const columns = [
@@ -280,26 +385,108 @@ export default function Movies() {
               />
             </div>
 
-            <FileUpload
-              label="Fichier Vidéo"
-              accept="video/*"
-              maxSize={500 * 1024 * 1024} // 500MB pour les vidéos
-              value={form.video_file}
-              onChange={(file) => setForm({...form, video_file: file})}
-              disabled={submitting}
-              helperText="Sélectionnez le fichier vidéo du film (MP4, WebM, OGG, MOV)"
-            />
+            {/* Sélecteur de source vidéo */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="video_source"
+                    value="file"
+                    checked={form.video_source === 'file'}
+                    onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="video_source"
+                    value="url"
+                    checked={form.video_source === 'url'}
+                    onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                </label>
+              </div>
 
-            <FileUpload
-              label="Affiche du Film"
-              accept="image/*"
-              maxSize={5 * 1024 * 1024} // 5MB pour les images
-              value={form.image_file}
-              onChange={(file) => setForm({...form, image_file: file})}
-              disabled={submitting}
-              helperText="Sélectionnez une image pour l'affiche du film"
-              showPreview={true}
-            />
+              {/* Option Fichier */}
+              {form.video_source === 'file' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fichier Vidéo <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="file" 
+                    accept="video/*"
+                    onChange={e => handleVideoSelect(e.target.files[0])}
+                    disabled={uploadingVideo}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {uploadingVideo && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
+                        <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                      </div>
+                    </div>
+                  )}
+                  {form.video_url && !uploadingVideo && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Option URL */}
+              {form.video_source === 'url' && (
+                <FormInput
+                  label="URL de la Vidéo"
+                  placeholder="https://exemple.com/video.mp4"
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => setForm({...form, video_url: e.target.value})}
+                  required
+                />
+              )}
+            </div>
+
+            {/* Upload Image */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Affiche du Film <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={e => handleImageSelect(e.target.files[0])}
+                disabled={uploadingImage}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+              />
+              {uploadingImage && (
+                <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-purple-800 font-medium">Upload image en cours...</p>
+                    <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
+                  </div>
+                  <div className="w-full bg-purple-200 rounded-full h-2">
+                    <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
+                  </div>
+                </div>
+              )}
+              {form.image_url && !uploadingImage && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                  <p className="text-sm text-green-800">Image uploadée avec succès</p>
+                </div>
+              )}
+            </div>
 
             <FormTextarea
               label="Description"

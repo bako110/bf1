@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchNews, createNews, updateNews, deleteNews, uploadNewsImage } from '../services/newsService';
 import Drawer from './Drawer';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function News() {
   const [news, setNews] = useState([]);
@@ -11,6 +12,8 @@ export default function News() {
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   useEffect(() => { loadNews(); }, []);
 
@@ -63,16 +66,23 @@ export default function News() {
     }
   }
 
-  async function handleDelete(item) {
-    const id = item.id || item._id;
-    if (window.confirm('Supprimer cette news ?')) {
-      try {
-        await deleteNews(id);
-        setSuccess('News supprimée.');
-        loadNews();
-      } catch (e) {
-        setError('Erreur lors de la suppression.');
-      }
+  function handleDelete(item) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!itemToDelete) return;
+    const id = itemToDelete.id || itemToDelete._id;
+    try {
+      await deleteNews(id);
+      setSuccess('News supprimée.');
+      loadNews();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   }
 
@@ -253,6 +263,21 @@ export default function News() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Supprimer la News"
+        message={`Êtes-vous sûr de vouloir supprimer la news "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
     </div>
   );
 }
