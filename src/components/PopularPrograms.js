@@ -17,7 +17,7 @@ export default function PopularPrograms() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null });
+  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null, video_url: '' });
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -146,7 +146,8 @@ export default function PopularPrograms() {
         category: form.category,
         schedule: form.schedule,
         episodes: parseInt(form.episodes) || 0,
-        image: form.image || null
+        image: form.image || null,
+        video_url: form.video_url || null
       };
       
       console.log('📤 Données envoyées au backend:', programData);
@@ -170,7 +171,7 @@ export default function PopularPrograms() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null });
+    setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null, video_url: '' });
     setError('');
     setUploadingImage(false);
     setUploadImageProgress(0);
@@ -210,7 +211,9 @@ export default function PopularPrograms() {
       category: item.category || '',
       schedule: item.schedule || '',
       episodes: item.episodes || 0,
-      image: item.image || ''
+      image: item.image || '',
+      image_file: null,
+      video_url: item.video_url || ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -391,6 +394,14 @@ export default function PopularPrograms() {
                 </div>
               )}
             </div>
+
+            <FormInput
+              label="URL de la Vidéo (Optionnel)"
+              placeholder="https://www.youtube.com/watch?v=... ou URL directe"
+              value={form.video_url}
+              onChange={e => setForm({...form, video_url: e.target.value})}
+              helperText="Ajoutez une vidéo YouTube ou une URL de vidéo directe"
+            />
 
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
               <p className="text-sm text-yellow-800">

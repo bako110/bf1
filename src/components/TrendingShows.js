@@ -18,7 +18,7 @@ export default function TrendingShows() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ title: '', category: '', image: '', description: '', host: '' });
+  const [form, setForm] = useState({ title: '', category: '', image: '', video_url: '', description: '', host: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -116,6 +116,7 @@ export default function TrendingShows() {
       title: item.title || '', 
       category: item.category || '',
       image: item.image || '',
+      video_url: item.video_url || '',
       description: item.description || '',
       host: item.host || ''
     });
@@ -126,7 +127,7 @@ export default function TrendingShows() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', category: '', image: '', description: '', host: '' });
+    setForm({ title: '', category: '', image: '', video_url: '', description: '', host: '' });
     setError('');
   }
 
@@ -220,6 +221,14 @@ export default function TrendingShows() {
               onChange={(url) => setForm({...form, image: url})}
               disabled={submitting}
               helperText="Sélectionnez une image pour l'émission"
+            />
+
+            <FormInput
+              label="URL de la Vidéo (Optionnel)"
+              placeholder="https://www.youtube.com/watch?v=... ou URL directe"
+              value={form.video_url}
+              onChange={e => setForm({...form, video_url: e.target.value})}
+              helperText="Ajoutez une vidéo YouTube ou une URL de vidéo directe"
             />
 
             <FormTextarea
