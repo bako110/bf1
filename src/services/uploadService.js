@@ -7,9 +7,18 @@ export async function uploadImage(file) {
   const formData = new FormData();
   formData.append('file', file);
   
-  const res = await api.post('/uploads/image', formData, {
+  const res = await api.post('/upload/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  
+  // Le backend retourne { success: true, message: "...", data: { url, public_id, ... } }
+  if (res.data && res.data.data) {
+    return {
+      url: res.data.data.url,
+      public_id: res.data.data.public_id,
+      ...res.data.data
+    };
+  }
   
   return res.data;
 }
@@ -21,9 +30,17 @@ export async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
   
-  const res = await api.post('/uploads/file', formData, {
+  const res = await api.post('/upload/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  
+  if (res.data && res.data.data) {
+    return {
+      url: res.data.data.url,
+      public_id: res.data.data.public_id,
+      ...res.data.data
+    };
+  }
   
   return res.data;
 }
@@ -33,11 +50,19 @@ export async function uploadFile(file) {
  */
 export async function uploadVideo(file) {
   const formData = new FormData();
-  formData.append('video', file);
+  formData.append('file', file);
   
-  const res = await api.post('/uploads/video', formData, {
+  const res = await api.post('/upload/video', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  
+  if (res.data && res.data.data) {
+    return {
+      url: res.data.data.url,
+      public_id: res.data.data.public_id,
+      ...res.data.data
+    };
+  }
   
   return res.data;
 }
