@@ -17,7 +17,7 @@ export default function PopularPrograms() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null, video_url: '' });
+  const [form, setForm] = useState({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null, video_url: '', video_file: null, video_source: 'url' });
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -32,6 +32,10 @@ export default function PopularPrograms() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadImageProgress, setUploadImageProgress] = useState(0);
   const [uploadImageError, setUploadImageError] = useState('');
+  
+  // États pour l'upload de vidéo
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
@@ -127,6 +131,61 @@ export default function PopularPrograms() {
     }
   }
 
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    
+    setUploadingVideo(true);
+    setUploadVideoProgress(0);
+    setError('');
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Non authentifié');
+      }
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100);
+          setUploadVideoProgress(progress);
+        }
+      });
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const videoUrl = response.data?.url || response.data?.secure_url;
+          setForm(prev => ({...prev, video_url: videoUrl, video_file: file}));
+          setUploadVideoProgress(100);
+        } else {
+          const errorData = JSON.parse(xhr.responseText);
+          throw new Error(errorData.detail || 'Erreur upload');
+        }
+        setUploadingVideo(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError('Erreur lors de l\'upload de la vidéo');
+        setForm(prev => ({...prev, video_file: null}));
+        setUploadingVideo(false);
+      });
+      
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+      
+    } catch (err) {
+      setError('Erreur lors de l\'upload: ' + err.message);
+      setForm(prev => ({...prev, video_file: null}));
+      setUploadingVideo(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -134,6 +193,11 @@ export default function PopularPrograms() {
     
     if (uploadingImage) {
       setError('Veuillez attendre la fin de l\'upload de l\'image');
+      return;
+    }
+    
+    if (uploadingVideo) {
+      setError('Veuillez attendre la fin de l\'upload de la vidéo');
       return;
     }
     
@@ -171,11 +235,13 @@ export default function PopularPrograms() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null, video_url: '' });
+    setForm({ title: '', description: '', category: '', schedule: '', episodes: 0, image: '', image_file: null, video_url: '', video_file: null, video_source: 'url' });
     setError('');
     setUploadingImage(false);
     setUploadImageProgress(0);
     setUploadImageError('');
+    setUploadingVideo(false);
+    setUploadVideoProgress(0);
   }
 
   function handleDelete(item) {
@@ -213,7 +279,9 @@ export default function PopularPrograms() {
       episodes: item.episodes || 0,
       image: item.image || '',
       image_file: null,
-      video_url: item.video_url || ''
+      video_url: item.video_url || '',
+      video_file: null,
+      video_source: item.video_url ? 'url' : 'file'
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -395,13 +463,96 @@ export default function PopularPrograms() {
               )}
             </div>
 
-            <FormInput
-              label="URL de la Vidéo (Optionnel)"
-              placeholder="https://www.youtube.com/watch?v=... ou URL directe"
-              value={form.video_url}
-              onChange={e => setForm({...form, video_url: e.target.value})}
-              helperText="Ajoutez une vidéo YouTube ou une URL de vidéo directe"
-            />
+            {/* Choix source vidéo */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Source de la Vidéo (Optionnel)
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="video_source"
+                    value="url"
+                    checked={form.video_source === 'url'}
+                    onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="video_source"
+                    value="file"
+                    checked={form.video_source === 'file'}
+                    onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                </label>
+              </div>
+
+              {form.video_source === 'file' ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg className="w-8 h-8 mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Cliquez pour sélectionner une vidéo</span>
+                        </p>
+                        <p className="text-xs text-gray-500">MP4, WebM, MOV (MAX. 100MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="video/*"
+                        onChange={e => handleVideoSelect(e.target.files[0])}
+                        disabled={uploadingVideo}
+                      />
+                    </label>
+                  </div>
+                  {uploadingVideo && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-blue-800 font-medium">
+                          Upload vers Cloudinary en cours...
+                        </p>
+                        <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadVideoProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {form.video_url && !uploadingVideo && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      {form.video_file && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Fichier: {form.video_file.name}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <FormInput
+                  label="URL de la Vidéo"
+                  placeholder="https://www.youtube.com/watch?v=... ou URL directe"
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => setForm({...form, video_url: e.target.value})}
+                  helperText="YouTube, Vimeo, ou lien direct vers une vidéo"
+                />
+              )}
+            </div>
 
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
               <p className="text-sm text-yellow-800">

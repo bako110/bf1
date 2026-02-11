@@ -1,5 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Fonction pour détecter si c'est un lien YouTube
+const isYouTubeUrl = (url) => {
+  if (!url) return false;
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+// Fonction pour extraire l'ID YouTube
+const extractYouTubeId = (url) => {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([^&]+)/,
+    /(?:youtube\.com\/embed\/)([^?]+)/,
+    /(?:youtu\.be\/)([^?]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
+
 const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }) => {
   const [activeRecording, setActiveRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -7,6 +28,10 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
   const [error, setError] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Détecter si c'est YouTube
+  const isYouTube = isYouTubeUrl(streamUrl);
+  const youtubeId = isYouTube ? extractYouTubeId(streamUrl) : null;
   
   // Refs pour MediaRecorder
   const videoRef = useRef(null);
@@ -198,15 +223,26 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
       {/* Prévisualisation du flux */}
       <div className="mb-6">
         <div className="relative bg-black rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
-          <video
-            ref={videoRef}
-            src={streamUrl}
-            className="absolute top-0 left-0 w-full h-full"
-            controls
-            autoPlay
-            muted
-            crossOrigin="anonymous"
-          />
+          {isYouTube && youtubeId ? (
+            <iframe
+              ref={videoRef}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&enablejsapi=1`}
+              className="absolute top-0 left-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="YouTube Live Stream"
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              src={streamUrl}
+              className="absolute top-0 left-0 w-full h-full"
+              controls
+              autoPlay
+              muted
+              crossOrigin="anonymous"
+            />
+          )}
           {isRecording && (
             <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full flex items-center animate-pulse">
               <span className="w-3 h-3 bg-white rounded-full mr-2"></span>
