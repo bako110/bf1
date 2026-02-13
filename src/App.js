@@ -32,6 +32,7 @@ import Programs from './components/Programs';
 import SubscriptionPlans from './components/SubscriptionPlans';
 import Archives from './components/Archives';
 import LiveControlScreen from './screens/LiveControlScreen';
+import Categories from './components/Categories';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -74,7 +75,7 @@ function App() {
           {section === 'movies' && <MoviesScreen />}
           {section === 'messages' && <Messages />}
           {section === 'replay' && <Replays />}
-          {section === 'popularPrograms' && <PopularPrograms />}
+          {/* {section === 'popularPrograms' && <PopularPrograms />} */}
           {section === 'reel' && <Reels />}
           {section === 'interview' && <Interviews />}
           {section === 'trendingShow' && <TrendingShows />}
@@ -86,6 +87,7 @@ function App() {
           {section === 'payments' && <Payments />}
           {section === 'contact' && <Contact />}
           {section === 'programs' && <Programs />}
+          {section === 'categories' && <Categories />}
           {section === 'subscriptionPlans' && <SubscriptionPlans />}
           {section === 'archives' && <Archives />}
           {section === 'liveControl' && <LiveControlScreen />}

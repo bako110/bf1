@@ -17,7 +17,7 @@ export default function Interviews() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', guest_name: '', guest_role: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', duration_minutes: 0, published_at: '' });
+  const [form, setForm] = useState({ title: '', guest_name: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -98,9 +98,6 @@ export default function Interviews() {
           const response = JSON.parse(xhr.responseText);
           const videoUrl = response.data?.url || response.data?.secure_url;
           setForm(prev => ({...prev, video_url: videoUrl}));
-          if (response.data?.duration) {
-            setForm(prev => ({...prev, duration_minutes: Math.ceil(response.data.duration / 60)}));
-          }
         }
         setUploadingVideo(false);
       });
@@ -174,12 +171,9 @@ export default function Interviews() {
       const payload = {
         title: form.title,
         guest_name: form.guest_name,
-        guest_role: form.guest_role,
         description: form.description,
         image: form.image || null,
-        video_url: form.video_url || null,
-        duration_minutes: parseInt(form.duration_minutes) || 0,
-        published_at: form.published_at || null
+        video_url: form.video_url || null
       };
       
       if (editId) {
@@ -199,7 +193,7 @@ export default function Interviews() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', guest_name: '', guest_role: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', duration_minutes: 0, published_at: '' });
+    setForm({ title: '', guest_name: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file' });
     setError('');
     setUploadingVideo(false);
     setUploadVideoProgress(0);
@@ -233,14 +227,11 @@ export default function Interviews() {
     setForm({ 
       title: item.title || '', 
       guest_name: item.guest_name || '',
-      guest_role: item.guest_role || '',
       description: item.description || '',
       image: item.image || '',
       video_url: item.video_url || '',
       video_file: null,
-      video_source: item.video_url ? 'url' : 'file',
-      duration_minutes: item.duration_minutes || 0,
-      published_at: item.published_at ? new Date(item.published_at).toISOString().split('T')[0] : ''
+      video_source: item.video_url ? 'url' : 'file'
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -248,9 +239,7 @@ export default function Interviews() {
 
   const columns = [
     { key: 'title', label: 'Titre' },
-    { key: 'guest_name', label: 'Invité' },
-    { key: 'duration_minutes', label: 'Durée (min)' },
-    { key: 'published_at', label: 'Date', render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : '-' },
+    { key: 'guest_name', label: 'Invité' }
   ];
 
   const actions = [
@@ -303,7 +292,6 @@ export default function Interviews() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput label="Titre" placeholder="Titre de l'interview" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
             <FormInput label="Nom de l'invité" placeholder="Nom complet" value={form.guest_name} onChange={e => setForm({...form, guest_name: e.target.value})} required />
-            <FormInput label="Rôle/Fonction" placeholder="Ex: Présentateur, Artiste, etc." value={form.guest_role} onChange={e => setForm({...form, guest_role: e.target.value})} required />
             <FormTextarea label="Description" placeholder="Description ou contenu..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} required />
             
             {/* Sélecteur de source vidéo */}
@@ -404,8 +392,6 @@ export default function Interviews() {
               )}
             </div>
 
-            <FormInput label="Durée (minutes)" placeholder="30" value={form.duration_minutes} onChange={e => setForm({...form, duration_minutes: e.target.value})} type="number" min="1" max="600" required />
-            <FormInput label="Date de publication" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} type="datetime-local" />
             <div className="flex gap-3 pt-2">
               <Button type="submit" variant="primary" fullWidth>{editId ? 'Mettre à jour' : 'Créer'}</Button>
               <Button type="button" variant="ghost" fullWidth onClick={handleClose}>Annuler</Button>

@@ -23,7 +23,6 @@ export default function Reels() {
     description: '',
     video_file: null,
     video_url: '',
-    thumbnail_url: '',
     video_source: 'file' // 'file' ou 'url'
   });
   const [editId, setEditId] = useState(null);
@@ -210,8 +209,7 @@ export default function Reels() {
       const reelData = {
         title: form.title,
         description: form.description,
-        video_url: form.video_url || null,
-        thumbnail_url: form.thumbnail_url || null
+        video_url: form.video_url || null
       };
       
       if (editId) {
@@ -256,7 +254,6 @@ export default function Reels() {
       description: item.description || '',
       video_file: null,
       video_url: item.video_url || '',
-      thumbnail_url: item.thumbnail_url || '',
       video_source: item.video_url ? 'url' : 'file'
     });
     setEditId(item.id || item._id);
@@ -267,8 +264,6 @@ export default function Reels() {
     setIsDrawerOpen(false);
     setUploadingVideo(false);
     setUploadVideoProgress(0);
-    setUploadingImage(false);
-    setUploadImageProgress(0);
     setEditId(null);
     setForm({ 
       title: '', 
@@ -368,65 +363,59 @@ export default function Reels() {
                 </label>
               </div>
 
-              {/* Upload Vidéo */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Fichier Vidéo <span className="text-red-500">*</span>
-                </label>
-                <input 
-                  type="file" 
-                  accept="video/*"
-                  onChange={e => handleVideoSelect(e.target.files[0])}
-                  disabled={uploadingVideo}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                {uploadingVideo && (
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
-                      <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+              {/* Upload Vidéo ou URL */}
+              {form.video_source === 'file' ? (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fichier Vidéo <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="file" 
+                    accept="video/*"
+                    onChange={e => handleVideoSelect(e.target.files[0])}
+                    disabled={uploadingVideo}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {uploadingVideo && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
+                        <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                      </div>
                     </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                  )}
+                  {form.video_url && !uploadingVideo && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-800">Vidéo uploadée ✓</p>
                     </div>
-                  </div>
-                )}
-                {form.video_url && !uploadingVideo && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                    <p className="text-sm text-green-800">Vidéo uploadée ✓</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Upload Miniature */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Miniature (optionnel)
-                </label>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={e => handleImageSelect(e.target.files[0])}
-                  disabled={uploadingImage}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                />
-                {uploadingImage && (
-                  <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm text-purple-800 font-medium">Upload image...</p>
-                      <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    URL de la Vidéo <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=... ou https://example.com/video.mp4"
+                    value={form.video_url}
+                    onChange={e => setForm({...form, video_url: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                  <p className="text-xs text-gray-500">
+                    💡 Formats supportés : YouTube, liens directs MP4, flux HLS (.m3u8)
+                  </p>
+                  {form.video_url && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-800">URL vidéo définie ✓</p>
                     </div>
-                    <div className="w-full bg-purple-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
-                    </div>
-                  </div>
-                )}
-                {form.thumbnail_url && !uploadingImage && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                    <p className="text-sm text-green-800">Miniature uploadée ✓</p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <FormTextarea

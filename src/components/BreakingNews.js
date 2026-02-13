@@ -8,10 +8,12 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
+import FormSelect from './ui/FormSelect';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
+import { fetchCategories } from '../services/categoryService';
 
 export default function BreakingNews() {
   const [items, setItems] = useState([]);
@@ -29,10 +31,21 @@ export default function BreakingNews() {
   const itemsPerPage = 20;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     loadBreakingNews();
+    loadCategories();
   }, []);
+
+  async function loadCategories() {
+    try {
+      const data = await fetchCategories();
+      setCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement catégories:', e);
+    }
+  }
 
   async function loadBreakingNews(page = 1, append = false) {
     if (!append) {
@@ -199,12 +212,13 @@ export default function BreakingNews() {
               onChange={e => setForm({...form, title: e.target.value})}
               required
             />
-            <FormInput
+            <FormSelect
               label="Catégorie"
-              placeholder="Ex: Politique, Économie, Sports"
               value={form.category}
               onChange={e => setForm({...form, category: e.target.value})}
+              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
               required
+              helperText="Sélectionnez une catégorie existante ou créez-en une dans la section Catégories"
             />
             <FormInput
               label="Auteur"

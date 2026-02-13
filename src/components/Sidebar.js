@@ -7,8 +7,9 @@ const sections = [
   { label: 'Contenu', key: 'submenu_content', isHeader: true },
   { label: 'Contrôle Live', key: 'liveControl' },
   { label: 'Programmes (EPG)', key: 'programs' },
+  { label: 'Catégories', key: 'categories' },
   // { label: 'Émissions', key: 'shows' },
-  { label: 'Programmes Populaires', key: 'popularPrograms' },
+  // { label: 'Programmes Populaires', key: 'popularPrograms' }, // MASQUÉ
   { label: 'Trending Show', key: 'trendingShow' },
   { label: 'Breaking News', key: 'breakingNews' },
   { label: 'Films', key: 'movies' },

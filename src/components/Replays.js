@@ -8,10 +8,12 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
+import FormSelect from './ui/FormSelect';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import ConfirmModal from './ui/ConfirmModal';
 import Pagination from './ui/Pagination';
+import { fetchCategories } from '../services/categoryService';
 
 export default function Replays() {
   const [items, setItems] = useState([]);
@@ -47,10 +49,23 @@ export default function Replays() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
+  
+  // État pour les catégories
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     loadReplays();
+    loadCategories();
   }, []);
+
+  async function loadCategories() {
+    try {
+      const data = await fetchCategories();
+      setCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement catégories:', e);
+    }
+  }
 
   async function loadReplays(page = 1, append = false) {
     if (!append) {
@@ -268,14 +283,9 @@ export default function Replays() {
     { key: 'category', label: 'Catégorie', render: (val) => String(val || '') },
     { key: 'program_title', label: 'Programme', render: (val) => String(val || '') },
     { 
-      key: 'duration_minutes', 
-      label: 'Durée',
-      render: (val) => `${val || 0} min`
-    },
-    { 
       key: 'aired_at', 
       label: 'Diffusé le',
-      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : '-'
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : 'Aujourd\'hui'
     }
   ];
 
@@ -341,19 +351,13 @@ export default function Replays() {
               required
             />
 
-            <FormInput
+            <FormSelect
               label="Catégorie"
-              placeholder="Actualités, Sport, Culture..."
               value={form.category}
               onChange={e => setForm({...form, category: e.target.value})}
+              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
               required
-            />
-
-            <FormInput
-              label="Titre du Programme"
-              placeholder="Le 20H"
-              value={form.program_title}
-              onChange={e => setForm({...form, program_title: e.target.value})}
+              helperText="Sélectionnez une catégorie existante ou créez-en une dans la section Catégories"
             />
 
             {/* Sélecteur de source vidéo */}
@@ -461,27 +465,6 @@ export default function Replays() {
               disabled={submitting}
               helperText="Sélectionnez une image pour la miniature"
             />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="Durée (minutes)"
-                type="number"
-                placeholder="45"
-                value={form.duration_minutes}
-                onChange={e => setForm({...form, duration_minutes: parseInt(e.target.value) || 0})}
-                required
-                min="1"
-                max="600"
-              />
-
-              <FormInput
-                label="Date de Diffusion"
-                type="date"
-                value={form.aired_at}
-                onChange={e => setForm({...form, aired_at: e.target.value})}
-                required
-              />
-            </div>
 
             <FormTextarea
               label="Description"

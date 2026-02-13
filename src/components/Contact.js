@@ -1,23 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { sendContactMessage, getAboutInfo } from '../services/contactService';
+import { sendContactMessage, getAboutInfo, fetchContactMessages, deleteContactMessage } from '../services/contactService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function Contact() {
   const [aboutInfo, setAboutInfo] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', email: '', message: '', subject: '' });
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState(null);
 
   useEffect(() => {
     loadAboutInfo();
+    loadMessages();
   }, []);
 
   async function loadAboutInfo() {
@@ -32,6 +38,15 @@ export default function Contact() {
     setLoading(false);
   }
 
+  async function loadMessages() {
+    try {
+      const data = await fetchContactMessages();
+      setMessages(data || []);
+    } catch (e) {
+      console.error('Erreur chargement messages:', e);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -41,6 +56,7 @@ export default function Contact() {
       setSuccess('Message envoyé avec succès.');
       setForm({ name: '', email: '', message: '', subject: '' });
       setIsDrawerOpen(false);
+      loadMessages();
     } catch (e) {
       setError('Erreur lors de l\'envoi du message.');
     }
@@ -50,6 +66,25 @@ export default function Contact() {
     setIsDrawerOpen(false);
     setForm({ name: '', email: '', message: '', subject: '' });
     setError('');
+  }
+
+  function handleDelete(message) {
+    setMessageToDelete(message);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!messageToDelete) return;
+    try {
+      await deleteContactMessage(messageToDelete.id);
+      setSuccess('Message supprimé.');
+      loadMessages();
+    } catch (e) {
+      setError('Erreur lors de la suppression.');
+    } finally {
+      setDeleteModalOpen(false);
+      setMessageToDelete(null);
+    }
   }
 
   return (
@@ -122,6 +157,31 @@ export default function Contact() {
           </form>
         </Drawer>
 
+        {/* Liste des messages de contact */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-8">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-xl font-bold text-gray-900">Messages reçus</h3>
+            <p className="text-sm text-gray-600 mt-1">Liste des messages de contact envoyés par les utilisateurs</p>
+          </div>
+          {messages.length > 0 ? (
+            <DataTable
+              columns={[
+                { key: 'name', label: 'Nom' },
+                { key: 'email', label: 'Email' },
+                { key: 'subject', label: 'Sujet', render: (val) => val || '-' },
+                { key: 'message', label: 'Message', render: (val) => val.substring(0, 50) + '...' },
+                { key: 'created_at', label: 'Date', render: (val) => new Date(val).toLocaleDateString('fr-FR') }
+              ]}
+              data={messages}
+              actions={[
+                { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+              ]}
+            />
+          ) : (
+            <div className="p-8 text-center text-gray-500">Aucun message de contact</div>
+          )}
+        </div>
+
         {loading ? (
           <Loader size="lg" text="Chargement des informations de contact..." />
         ) : aboutInfo ? (
@@ -177,6 +237,14 @@ export default function Contact() {
             </div>
           </div>
         ) : null}
+
+        <ConfirmModal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          title="Supprimer le message"
+          message="Êtes-vous sûr de vouloir supprimer ce message ? Cette action est irréversible."
+        />
       </div>
     </div>
   );

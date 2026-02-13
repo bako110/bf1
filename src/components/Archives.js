@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchArchives, createArchive, updateArchive, deleteArchive } from '../services/archiveService';
+import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -7,6 +8,7 @@ import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
+import FormSelect from './ui/FormSelect';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
@@ -26,7 +28,6 @@ export default function Archives() {
     video_url: '', 
     video_file: null,
     video_source: 'file',
-    duration_minutes: 0,
     price: 0,
     archived_date: new Date().toISOString().split('T')[0]
   });
@@ -44,10 +45,21 @@ export default function Archives() {
   // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     loadArchives();
+    loadCategories();
   }, []);
+
+  async function loadCategories() {
+    try {
+      const data = await fetchCategories();
+      setCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement catégories:', e);
+    }
+  }
 
   async function loadArchives(page = 1, append = false) {
     if (!append) {
@@ -92,7 +104,6 @@ export default function Archives() {
     try {
       const payload = {
         ...form,
-        duration_minutes: parseInt(form.duration_minutes) || 0,
         price: parseFloat(form.price) || 0,
         archived_date: new Date(form.archived_date).toISOString()
       };
@@ -158,9 +169,6 @@ export default function Archives() {
           const response = JSON.parse(xhr.responseText);
           const videoUrl = response.data?.url || response.data?.secure_url;
           setForm(prev => ({...prev, video_url: videoUrl}));
-          if (response.data?.duration) {
-            setForm(prev => ({...prev, duration_minutes: Math.ceil(response.data.duration / 60)}));
-          }
         }
         setUploadingVideo(false);
       });
@@ -188,7 +196,6 @@ export default function Archives() {
       video_url: item.video_url || '',
       video_file: null,
       video_source: item.video_url ? 'url' : 'file',
-      duration_minutes: item.duration_minutes || 0,
       price: item.price || 0,
       archived_date: item.archived_date ? new Date(item.archived_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
@@ -209,7 +216,6 @@ export default function Archives() {
       video_url: '', 
       video_file: null,
       video_source: 'file',
-      duration_minutes: 0,
       price: 0,
       archived_date: new Date().toISOString().split('T')[0]
     });
@@ -222,27 +228,22 @@ export default function Archives() {
     { key: 'title', label: 'Titre' },
     { key: 'category', label: 'Catégorie' },
     { 
-      key: 'duration_minutes', 
-      label: 'Durée',
-      render: (item) => `${item.duration_minutes || 0} min`
-    },
-    { 
       key: 'price', 
       label: 'Prix',
-      render: (item) => {
-        const price = Number(item.price) || 0;
+      render: (value, row) => {
+        const price = Number(value) || 0;
         return `${price.toLocaleString()} FCFA`;
       }
     },
     { 
       key: 'views', 
       label: 'Vues',
-      render: (item) => item.views || 0
+      render: (value) => value || 0
     },
     { 
       key: 'purchases_count', 
       label: 'Achats',
-      render: (item) => item.purchases_count || 0
+      render: (value) => value || 0
     }
   ];
 
@@ -317,11 +318,11 @@ export default function Archives() {
             required
           />
 
-          <FormInput
+          <FormSelect
             label="Catégorie"
-            placeholder="Ex: Émission, Documentaire, Reportage"
             value={form.category}
             onChange={e => setForm({...form, category: e.target.value})}
+            options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
             required
           />
 
@@ -405,28 +406,16 @@ export default function Archives() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Durée (minutes)"
-              type="number"
-              placeholder="60"
-              value={form.duration_minutes}
-              onChange={e => setForm({...form, duration_minutes: e.target.value})}
-              min="0"
-              required
-            />
-
-            <FormInput
-              label="Prix (FCFA)"
-              type="number"
-              placeholder="1000"
-              value={form.price}
-              onChange={e => setForm({...form, price: e.target.value})}
-              min="0"
-              helperText="Prix pour achat individuel"
-              required
-            />
-          </div>
+          <FormInput
+            label="Prix (FCFA)"
+            type="number"
+            placeholder="1000"
+            value={form.price}
+            onChange={e => setForm({...form, price: e.target.value})}
+            min="0"
+            helperText="Prix pour achat individuel"
+            required
+          />
 
           <FormInput
             label="Date d'archivage"
