@@ -32,7 +32,8 @@ export default function Replays() {
     views: 0, 
     rating: 0, 
     aired_at: '', 
-    program_title: ''
+    program_title: '',
+    allow_comments: true
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -234,6 +235,19 @@ export default function Replays() {
     }
   }
 
+  async function handleToggleComments(item) {
+    const itemId = item.id || item._id;
+    const newStatus = !item.allow_comments;
+    
+    try {
+      await updateReplay(itemId, { allow_comments: newStatus });
+      setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
+      loadReplays();
+    } catch (e) {
+      setError('Erreur lors de la modification des commentaires.');
+    }
+  }
+
   function handleEdit(item) {
     setForm({ 
       title: item.title || '', 
@@ -247,7 +261,8 @@ export default function Replays() {
       views: item.views || 0,
       rating: item.rating || 0,
       aired_at: item.aired_at ? new Date(item.aired_at).toISOString().split('T')[0] : '',
-      program_title: item.program_title || ''
+      program_title: item.program_title || '',
+      allow_comments: item.allow_comments !== false
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -270,7 +285,8 @@ export default function Replays() {
       views: 0, 
       rating: 0, 
       aired_at: '', 
-      program_title: ''
+      program_title: '',
+      allow_comments: true
     });
     setError('');
     setUploading(false);
@@ -286,12 +302,52 @@ export default function Replays() {
       key: 'aired_at', 
       label: 'Diffusé le',
       render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : 'Aujourd\'hui'
-    }
+    },
+    { 
+      key: 'allow_comments', 
+      label: 'Commentaires',
+      render: (value) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          value === false 
+            ? 'bg-red-100 text-red-800' 
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {value === false ? (
+            <>
+              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              Désactivés
+            </>
+          ) : (
+            <>
+              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Activés
+            </>
+          )}
+        </span>
+      )
+    },
   ];
 
   const actions = [
-    { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
-    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+    { 
+      label: 'Modifier', 
+      onClick: handleEdit, 
+      className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' 
+    },
+    { 
+      label: 'Basculer commentaires', 
+      onClick: (item) => handleToggleComments(item), 
+      className: 'text-orange-600 hover:text-orange-800 font-medium text-sm' 
+    },
+    { 
+      label: 'Supprimer', 
+      onClick: handleDelete, 
+      className: 'text-red-600 hover:text-red-800 font-medium text-sm' 
+    }
   ];
 
   return (
@@ -474,6 +530,25 @@ export default function Replays() {
               rows={4}
               required
             />
+
+            {/* Option pour désactiver les commentaires */}
+            <div className="space-y-2">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!form.allow_comments}
+                  onChange={e => setForm({...form, allow_comments: !e.target.checked})}
+                  className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">
+                  🚫 Désactiver les commentaires
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                Cochez cette case si vous ne voulez pas autoriser les commentaires sur ce replay.
+                Les utilisateurs pourront voir le replay mais ne pourront pas commenter.
+              </p>
+            </div>
 
             <div className="flex gap-3 pt-4 border-t border-gray-200">
               <Button 

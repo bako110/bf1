@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LiveRecordingControl from '../components/LiveRecordingControl';
 
 const LiveControlScreen = () => {
-  const [streamUrl, setStreamUrl] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+  const [streamUrl, setStreamUrl] = useState('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
