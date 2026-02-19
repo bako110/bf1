@@ -1,6 +1,6 @@
 import React from 'react';
-import TrendingShows from '../components/TrendingShows';
+import JTandMag from '../components/JTandMag';
 
-export default function TrendingShowScreen() {
-  return <TrendingShows />;
+export default function JTandMagScreen() {
+  return <JTandMag />;
 }

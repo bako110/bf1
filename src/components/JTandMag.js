@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchTrendingShows, createTrendingShow, updateTrendingShow, deleteTrendingShow } from '../services/trendingShowService';
+import { fetchJTandMag, createJTandMag, updateJTandMag, deleteJTandMag } from '../services/jtandmagService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -15,14 +15,14 @@ import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
 import { fetchCategories } from '../services/categoryService';
 
-export default function TrendingShows() {
+export default function JTandMag() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [form, setForm] = useState({ title: '', category: '', image: '', video_url: '', video_file: null, video_source: 'url', description: '', host: '', allow_comments: true });
+  const [form, setForm] = useState({ title: '', category: '', image: '', video_url: '', video_file: null, video_source: 'url', description: '', host: '', allow_comments: true, rating: 0 });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -34,9 +34,9 @@ export default function TrendingShows() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [categories, setCategories] = useState([]);
-
+  
   useEffect(() => {
-    loadTrendingShows();
+    loadJTandMag();
     loadCategories();
   }, []);
 
@@ -49,7 +49,7 @@ export default function TrendingShows() {
     }
   }
 
-  async function loadTrendingShows(page = 1, append = false) {
+  async function loadJTandMag(page = 1, append = false) {
     if (!append) {
       setLoading(true);
     } else {
@@ -57,7 +57,7 @@ export default function TrendingShows() {
     }
     setError('');
     try {
-      const data = await fetchTrendingShows(page, itemsPerPage);
+      const data = await fetchJTandMag(page, itemsPerPage);
       if (append) {
         setItems(prev => [...prev, ...data.items]);
       } else {
@@ -67,20 +67,21 @@ export default function TrendingShows() {
       setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des émissions tendances.');
+      setError('Erreur lors du chargement des JT et Magazines.');
     }
     setLoading(false);
     setPaginationLoading(false);
   }
 
+  
   // Handlers de pagination
   const handlePageChange = (page) => {
-    loadTrendingShows(page);
+    loadJTandMag(page);
   };
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
-      loadTrendingShows(currentPage + 1, true);
+      loadJTandMag(currentPage + 1, true);
     }
   };
 
@@ -152,14 +153,14 @@ export default function TrendingShows() {
     setSubmitting(true);
     try {
       if (editId) {
-        await updateTrendingShow(editId, form);
-        setSuccess('Émission modifiée avec succès.');
+        await updateJTandMag(editId, form);
+        setSuccess('JT et Magazine modifié avec succès.');
       } else {
-        await createTrendingShow(form);
-        setSuccess('Émission créée avec succès.');
+        await createJTandMag(form);
+        setSuccess('JT et Magazine créé avec succès.');
       }
       handleClose();
-      loadTrendingShows();
+      loadJTandMag();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
     } finally {
@@ -176,9 +177,9 @@ export default function TrendingShows() {
     if (!itemToDelete) return;
     const itemId = itemToDelete.id || itemToDelete._id;
     try {
-      await deleteTrendingShow(itemId);
-      setSuccess('Émission supprimée.');
-      loadTrendingShows();
+      await deleteJTandMag(itemId);
+      setSuccess('JT et Magazine supprimé.');
+      loadJTandMag();
     } catch (e) {
       setError('Erreur lors de la suppression.');
     } finally {
@@ -192,9 +193,9 @@ export default function TrendingShows() {
     const newStatus = !item.allow_comments;
     
     try {
-      await updateTrendingShow(itemId, { allow_comments: newStatus });
+      await updateJTandMag(itemId, { allow_comments: newStatus });
       setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
-      loadTrendingShows();
+      loadJTandMag();
     } catch (e) {
       setError('Erreur lors de la modification des commentaires.');
     }
@@ -280,14 +281,14 @@ export default function TrendingShows() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Émissions Tendances"
-          description="Gérer les émissions populaires du moment"
+          title="Gestion des JT et Magazines"
+          description="Gérer les journaux télévisés et magazines"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
-              + Nouvelle Émission
+              + Nouveau JT/Magazine
             </Button>
           }
         />
@@ -317,17 +318,17 @@ export default function TrendingShows() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier l\'Émission' : 'Nouvelle Émission'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le JT/Magazine' : 'Nouveau JT/Magazine'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
               <p className="text-sm text-yellow-800">
-                <strong>Astuce :</strong> Ajoutez les émissions les plus populaires du moment.
+                <strong>Astuce :</strong> Ajoutez les JT et magazines les plus populaires du moment.
               </p>
             </div>
 
             <FormInput
-              label="Titre de l'Émission"
-              placeholder="Le Grand Show"
+              label="Titre du JT/Magazine"
+              placeholder="Journal de 20H"
               value={form.title}
               onChange={e => setForm({...form, title: e.target.value})}
               required
@@ -351,11 +352,11 @@ export default function TrendingShows() {
             />
 
             <ImageUpload
-              label="Image de l'Émission"
+              label="Image du JT/Magazine"
               value={form.image}
               onChange={(url) => setForm({...form, image: url})}
               disabled={submitting}
-              helperText="Sélectionnez une image pour l'émission"
+              helperText="Sélectionnez une image pour le JT/Magazine"
             />
 
             {/* Choix source vidéo */}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchReplays, createReplay, updateReplay, deleteReplay } from '../services/replayService';
+import { fetchReportages, createReportage, updateReportage, deleteReportage } from '../services/reportageService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -15,7 +15,7 @@ import ConfirmModal from './ui/ConfirmModal';
 import Pagination from './ui/Pagination';
 import { fetchCategories } from '../services/categoryService';
 
-export default function Replays() {
+export default function Reportages() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,7 +32,6 @@ export default function Replays() {
     views: 0, 
     rating: 0, 
     aired_at: '', 
-    program_title: '',
     allow_comments: true
   });
   const [editId, setEditId] = useState(null);
@@ -55,7 +54,7 @@ export default function Replays() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    loadReplays();
+    loadReportages();
     loadCategories();
   }, []);
 
@@ -68,7 +67,7 @@ export default function Replays() {
     }
   }
 
-  async function loadReplays(page = 1, append = false) {
+  async function loadReportages(page = 1, append = false) {
     if (!append) {
       setLoading(true);
     } else {
@@ -76,7 +75,7 @@ export default function Replays() {
     }
     setError('');
     try {
-      const data = await fetchReplays(page, itemsPerPage);
+      const data = await fetchReportages(page, itemsPerPage);
       if (append) {
         setItems(prev => [...prev, ...data.items]);
       } else {
@@ -86,7 +85,7 @@ export default function Replays() {
       setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des replays.');
+      setError('Erreur lors du chargement des reportages.');
     }
     setLoading(false);
     setPaginationLoading(false);
@@ -94,12 +93,12 @@ export default function Replays() {
 
   // Handlers de pagination
   const handlePageChange = (page) => {
-    loadReplays(page);
+    loadReportages(page);
   };
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
-      loadReplays(currentPage + 1, true);
+      loadReportages(currentPage + 1, true);
     }
   };
 
@@ -192,21 +191,20 @@ export default function Replays() {
         thumbnail: form.thumbnail || null,
         duration_minutes: parseInt(form.duration_minutes) || 1,
         aired_at: form.aired_at ? new Date(form.aired_at).toISOString() : new Date().toISOString(),
-        program_title: form.program_title || null,
         host: null
       };
       
       console.log('📤 Données envoyées au backend:', replayData);
       
       if (editId) {
-        await updateReplay(editId, replayData);
-        setSuccess('Replay modifié avec succès.');
+        await updateReportage(editId, replayData);
+        setSuccess('Reportage modifié avec succès.');
       } else {
-        await createReplay(replayData);
-        setSuccess('Replay créé avec succès.');
+        await createReportage(replayData);
+        setSuccess('Reportage créé avec succès.');
       }
       handleCloseDrawer();
-      loadReplays();
+      loadReportages();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
     } finally {
@@ -224,9 +222,9 @@ export default function Replays() {
     
     const id = itemToDelete.id || itemToDelete._id;
     try {
-      await deleteReplay(id);
-      setSuccess('Replay supprimé.');
-      loadReplays();
+      await deleteReportage(id);
+      setSuccess('Reportage supprimé.');
+      loadReportages();
     } catch (e) {
       setError('Erreur lors de la suppression.');
     } finally {
@@ -240,9 +238,9 @@ export default function Replays() {
     const newStatus = !item.allow_comments;
     
     try {
-      await updateReplay(itemId, { allow_comments: newStatus });
+      await updateReportage(itemId, { allow_comments: newStatus });
       setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
-      loadReplays();
+      loadReportages();
     } catch (e) {
       setError('Erreur lors de la modification des commentaires.');
     }
@@ -261,7 +259,6 @@ export default function Replays() {
       views: item.views || 0,
       rating: item.rating || 0,
       aired_at: item.aired_at ? new Date(item.aired_at).toISOString().split('T')[0] : '',
-      program_title: item.program_title || '',
       allow_comments: item.allow_comments !== false
     });
     setEditId(item.id || item._id);
@@ -285,7 +282,6 @@ export default function Replays() {
       views: 0, 
       rating: 0, 
       aired_at: '', 
-      program_title: '',
       allow_comments: true
     });
     setError('');
@@ -297,7 +293,6 @@ export default function Replays() {
   const columns = [
     { key: 'title', label: 'Titre', render: (val) => String(val || '') },
     { key: 'category', label: 'Catégorie', render: (val) => String(val || '') },
-    { key: 'program_title', label: 'Programme', render: (val) => String(val || '') },
     { 
       key: 'aired_at', 
       label: 'Diffusé le',
@@ -354,14 +349,14 @@ export default function Replays() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Replays"
-          description="Créer et gérer les rediffusions d'émissions"
+          title="Gestion des Reportages"
+          description="Créer et gérer les reportages d'émissions"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
-              + Nouveau Replay
+              + Nouveau Reportage
             </Button>
           }
         />
@@ -384,24 +379,24 @@ export default function Replays() {
                 </>
               ) : (
                 <>
-                  Charger plus de replays ({items.length}/{totalItems})
+                  Charger plus de reportages ({items.length}/{totalItems})
                 </>
               )}
             </button>
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Replay' : '➕ Nouveau Replay'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Reportage' : '➕ Nouveau Reportage'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un replay complet.
+                <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un reportage complet.
               </p>
             </div>
 
             <FormInput
-              label="Titre du Replay"
-              placeholder="Journal du 20H - 05/02/2026"
+              label="Titre du Reportage"
+              placeholder="Reportage spécial - Événement du jour"
               value={form.title}
               onChange={e => setForm({...form, title: e.target.value})}
               required
@@ -515,7 +510,7 @@ export default function Replays() {
             </div>
 
             <ImageUpload
-              label="Miniature du Replay"
+              label="Miniature du Reportage"
               value={form.thumbnail}
               onChange={(url) => setForm({...form, thumbnail: url})}
               disabled={submitting}
@@ -524,7 +519,7 @@ export default function Replays() {
 
             <FormTextarea
               label="Description"
-              placeholder="Description détaillée du replay..."
+              placeholder="Description détaillée du reportage..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
@@ -583,12 +578,12 @@ export default function Replays() {
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des replays..." />
+          <Loader size="lg" text="Chargement des reportages..." />
         ) : items.length === 0 ? (
           <EmptyState 
             icon="🎬"
-            title="Aucun replay"
-            message="Créez votre premier replay pour le voir apparaître ici."
+            title="Aucun reportage"
+            message="Créez votre premier reportage pour le voir apparaître ici."
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -621,8 +616,8 @@ export default function Replays() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer le Replay"
-        message={`Êtes-vous sûr de vouloir supprimer le replay "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer le Reportage"
+        message={`Êtes-vous sûr de vouloir supprimer le reportage "${itemToDelete?.title}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchInterviews, createInterview, updateInterview, deleteInterview } from '../services/interviewService';
+import { fetchDivertissements, createDivertissement, updateDivertissement, deleteDivertissement } from '../services/divertissementService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -8,16 +8,17 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
+import FormSelect from './ui/FormSelect';
 import EmptyState from './ui/EmptyState';
-import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
+import { fetchCategories } from '../services/categoryService';
 
-export default function Interviews() {
+export default function Divertissements() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', guest_name: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', allow_comments: true });
+  const [form, setForm] = useState({ title: '', category: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', allow_comments: true });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -34,12 +35,23 @@ export default function Interviews() {
   const [uploadImageProgress, setUploadImageProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    loadInterviews();
+    loadDivertissements();
+    loadCategories();
   }, []);
 
-  async function loadInterviews(page = 1, append = false) {
+  async function loadCategories() {
+    try {
+      const data = await fetchCategories();
+      setCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement catégories:', e);
+    }
+  }
+
+  async function loadDivertissements(page = 1, append = false) {
     if (!append) {
       setLoading(true);
     } else {
@@ -47,7 +59,7 @@ export default function Interviews() {
     }
     setError('');
     try {
-      const data = await fetchInterviews(page, itemsPerPage);
+      const data = await fetchDivertissements(page, itemsPerPage);
       if (append) {
         setItems(prev => [...prev, ...data.items]);
       } else {
@@ -57,7 +69,7 @@ export default function Interviews() {
       setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des interviews.');
+      setError('Erreur lors du chargement des divertissements.');
     }
     setLoading(false);
     setPaginationLoading(false);
@@ -65,12 +77,12 @@ export default function Interviews() {
 
   // Handlers de pagination
   const handlePageChange = (page) => {
-    loadInterviews(page);
+    loadDivertissements(page);
   };
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
-      loadInterviews(currentPage + 1, true);
+      loadDivertissements(currentPage + 1, true);
     }
   };
 
@@ -170,21 +182,21 @@ export default function Interviews() {
     try {
       const payload = {
         title: form.title,
-        guest_name: form.guest_name,
+        category: form.category,
         description: form.description,
         image: form.image || null,
         video_url: form.video_url || null
       };
       
       if (editId) {
-        await updateInterview(editId, payload);
-        setSuccess('Interview modifiée avec succès.');
+        await updateDivertissement(editId, payload);
+        setSuccess('Divertissement modifié avec succès.');
       } else {
-        await createInterview(payload);
-        setSuccess('Interview créée avec succès.');
+        await createDivertissement(payload);
+        setSuccess('Divertissement créé avec succès.');
       }
       handleClose();
-      loadInterviews();
+      loadDivertissements();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
     }
@@ -193,7 +205,7 @@ export default function Interviews() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', guest_name: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', allow_comments: true });
+    setForm({ title: '', category: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', allow_comments: true });
     setError('');
     setUploadingVideo(false);
     setUploadVideoProgress(0);
@@ -212,9 +224,9 @@ export default function Interviews() {
     setError('');
     setSuccess('');
     try {
-      await deleteInterview(id);
-      setSuccess('Interview supprimée.');
-      loadInterviews();
+      await deleteDivertissement(id);
+      setSuccess('Divertissement supprimé.');
+      loadDivertissements();
     } catch (e) {
       setError('Erreur lors de la suppression.');
     } finally {
@@ -228,9 +240,9 @@ export default function Interviews() {
     const newStatus = !item.allow_comments;
     
     try {
-      await updateInterview(itemId, { allow_comments: newStatus });
+      await updateDivertissement(itemId, { allow_comments: newStatus });
       setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
-      loadInterviews();
+      loadDivertissements();
     } catch (e) {
       setError('Erreur lors de la modification des commentaires.');
     }
@@ -239,7 +251,7 @@ export default function Interviews() {
   function handleEdit(item) {
     setForm({ 
       title: item.title || '', 
-      guest_name: item.guest_name || '',
+      category: item.category || '',
       description: item.description || '',
       image: item.image || '',
       video_url: item.video_url || '',
@@ -253,7 +265,7 @@ export default function Interviews() {
 
   const columns = [
     { key: 'title', label: 'Titre' },
-    { key: 'guest_name', label: 'Invité' },
+    { key: 'category', label: 'Catégorie' },
     { 
       key: 'allow_comments', 
       label: 'Commentaires',
@@ -305,14 +317,14 @@ export default function Interviews() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Interviews"
-          description="Créer et gérer les interviews"
+          title="Gestion des Divertissements"
+          description="Créer et gérer les divertissements"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
-              + Nouvelle Interview
+              + Nouveau Divertissement
             </Button>
           }
         />
@@ -335,17 +347,24 @@ export default function Interviews() {
                 </>
               ) : (
                 <>
-                  Charger plus d'interviews ({items.length}/{totalItems})
+                  Charger plus de divertissements ({items.length}/{totalItems})
                 </>
               )}
             </button>
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier l\'Interview' : 'Nouvelle Interview'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Divertissement' : 'Nouveau Divertissement'}>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <FormInput label="Titre" placeholder="Titre de l'interview" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-            <FormInput label="Nom de l'invité" placeholder="Nom complet" value={form.guest_name} onChange={e => setForm({...form, guest_name: e.target.value})} required />
+            <FormInput label="Titre du divertissement" placeholder="Titre du divertissement" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+            <FormSelect
+              label="Catégorie"
+              value={form.category}
+              onChange={e => setForm({...form, category: e.target.value})}
+              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
+              required
+              helperText="Sélectionnez une catégorie existante ou créez-en une dans la section Catégories"
+            />
             <FormTextarea label="Description" placeholder="Description ou contenu..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} required />
             
             {/* Sélecteur de source vidéo */}
@@ -473,9 +492,9 @@ export default function Interviews() {
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des interviews..." />
+          <Loader size="lg" text="Chargement des divertissements..." />
         ) : items.length === 0 ? (
-          <EmptyState icon="🎤" title="Aucune interview" message="Créez votre première interview." />
+          <EmptyState icon="🎤" title="Aucun divertissement" message="Créez votre premier divertissement." />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <DataTable columns={columns} data={items} actions={actions} />
@@ -503,8 +522,8 @@ export default function Interviews() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer l'Interview"
-        message={`Êtes-vous sûr de vouloir supprimer l'interview "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer le Divertissement"
+        message={`Êtes-vous sûr de vouloir supprimer le divertissement "${itemToDelete?.title}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

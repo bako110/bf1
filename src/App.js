@@ -9,6 +9,7 @@ import SubscriptionsScreen from './screens/SubscriptionsScreen';
 import Messages from './components/Messages';
 import Dashboard from './components/Dashboard';
 import SettingsScreen from './screens/SettingsScreen';
+import { logoutAdmin } from './services/authService';
 
 // Imports existants
 
@@ -16,11 +17,10 @@ import SettingsScreen from './screens/SettingsScreen';
 // Nouveaux imports
 import BreakingNews from './components/BreakingNews';
 import Comments from './components/Comments';
-import Interviews from './components/Interviews';
+import Divertissements from './components/Divertissements';
 import Reels from './components/Reels';
-import Replays from './components/Replays';
-import TrendingShows from './components/TrendingShows';
-import PopularPrograms from './components/PopularPrograms';
+import Reportages from './components/Reportages';
+import JTandMag from './components/JTandMag';
 import Favorites from './components/Favorites';
 // import Notifications from './components/Notifications';
 import Likes from './components/Likes';
@@ -33,6 +33,7 @@ import SubscriptionPlans from './components/SubscriptionPlans';
 import Archives from './components/Archives';
 import LiveControlScreen from './screens/LiveControlScreen';
 import Categories from './components/Categories';
+import Emissions from './components/Emissions';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -50,23 +51,22 @@ function App() {
     localStorage.setItem('currentSection', section);
   }, [section]);
 
+  const handleLogout = () => {
+    setIsAdmin(false);
+    localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('currentSection');
+    logoutAdmin(); // Supprime aussi le token
+  };
+
   if (!isAdmin) {
     return <AdminLogin onLogin={() => setIsAdmin(true)} />;
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar currentSection={section} onSectionChange={setSection} onLogout={() => {
-          setIsAdmin(false);
-          localStorage.removeItem('isAdminLoggedIn');
-          localStorage.removeItem('currentSection');
-        }} />
+      <Sidebar currentSection={section} onSectionChange={setSection} onLogout={handleLogout} />
       <div className="flex-1 ml-64">
-        <Header onLogout={() => {
-          setIsAdmin(false);
-          localStorage.removeItem('isAdminLoggedIn');
-          localStorage.removeItem('currentSection');
-        }} onSectionChange={setSection} />
+        <Header onLogout={handleLogout} onSectionChange={setSection} />
         <main className="mt-16 p-6">
           {section === 'dashboard' && <Dashboard />}
           {section === 'users' && <UsersScreen />}
@@ -74,11 +74,11 @@ function App() {
           {section === 'breakingNews' && <BreakingNews />}
           {section === 'movies' && <MoviesScreen />}
           {section === 'messages' && <Messages />}
-          {section === 'replay' && <Replays />}
+          {section === 'reportage' && <Reportages />}
           {/* {section === 'popularPrograms' && <PopularPrograms />} */}
           {section === 'reel' && <Reels />}
-          {section === 'interview' && <Interviews />}
-          {section === 'trendingShow' && <TrendingShows />}
+          {section === 'divertissement' && <Divertissements />}
+          {section === 'jtandmag' && <JTandMag />}
           {section === 'subscriptions' && <SubscriptionsScreen />}
           {section === 'favorites' && <Favorites />}
           {section === 'comments' && <Comments />}
@@ -91,6 +91,7 @@ function App() {
           {section === 'subscriptionPlans' && <SubscriptionPlans />}
           {section === 'archives' && <Archives />}
           {section === 'liveControl' && <LiveControlScreen />}
+          {section === 'emissions' && <Emissions />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}

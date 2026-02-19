@@ -1,26 +1,26 @@
 import api from '../config/api';
 
-export async function fetchTrendingShows(page = 1, limit = 20) {
-  const res = await api.get(`/trending-shows?page=${page}&limit=${limit}`);
+export async function fetchJTandMag(page = 1, limit = 20) {
+  const res = await api.get(`/jtandmag?page=${page}&limit=${limit}`);
   return res.data;
 }
 
-export async function createTrendingShow(show) {
-  const res = await api.post('/trending-shows', show);
+export async function createJTandMag(data) {
+  const res = await api.post('/jtandmag', data);
   return res.data;
 }
 
-export async function updateTrendingShow(id, show) {
-  const res = await api.patch(`/trending-shows/${id}`, show);
+export async function updateJTandMag(id, data) {
+  const res = await api.put(`/jtandmag/${id}`, data);
   return res.data;
 }
 
-export async function deleteTrendingShow(id) {
-  const res = await api.delete(`/trending-shows/${id}`);
+export async function deleteJTandMag(id) {
+  const res = await api.delete(`/jtandmag/${id}`);
   return res.data;
 }
 
-export async function getTrendingShowById(id) {
-  const res = await api.get(`/trending-shows/${id}`);
+export async function getJTandMagById(id) {
+  const res = await api.get(`/jtandmag/${id}`);
   return res.data;
 }

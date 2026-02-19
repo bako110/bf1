@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPrograms, createProgram, updateProgram, deleteProgram } from '../services/programService';
+import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -8,6 +9,7 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
+import FormSelect from './ui/FormSelect';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
@@ -22,7 +24,6 @@ export default function Programs() {
     title: '',
     description: '',
     type: '',
-    category: '',
     start_time: '',
     end_time: '',
     image_url: '',
@@ -38,10 +39,21 @@ export default function Programs() {
   const itemsPerPage = 20;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     loadPrograms();
+    loadCategories();
   }, []);
+
+  async function loadCategories() {
+    try {
+      const data = await fetchCategories();
+      setCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement catégories:', e);
+    }
+  }
 
   async function loadPrograms(page = 1, append = false) {
     if (!append) {
@@ -140,7 +152,6 @@ export default function Programs() {
       title: program.title || '',
       description: program.description || '',
       type: program.type || '',
-      category: program.category || '',
       start_time: formatDateTimeLocal(program.start_time),
       end_time: formatDateTimeLocal(program.end_time),
       image_url: program.image_url || '',
@@ -159,7 +170,6 @@ export default function Programs() {
       title: '',
       description: '',
       type: '',
-      category: '',
       start_time: '',
       end_time: '',
       image_url: '',
@@ -255,19 +265,13 @@ export default function Programs() {
               required
             />
 
-            <FormInput
+            <FormSelect
               label="Type"
-              placeholder="Actualités, Sport, Culture, Politique..."
               value={form.type}
               onChange={e => setForm({...form, type: e.target.value})}
+              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
               required
-            />
-
-            <FormInput
-              label="Catégorie"
-              placeholder="Journal, Magazine, Débat..."
-              value={form.category}
-              onChange={e => setForm({...form, category: e.target.value})}
+              helperText="Sélectionnez un type dans la liste des catégories disponibles"
             />
 
             <div className="grid grid-cols-2 gap-4">
