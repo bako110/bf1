@@ -294,7 +294,25 @@ export default function Movies() {
   }
 
   const columns = [
-    { key: 'title', label: 'Titre' },
+    { 
+      key: 'title', 
+      label: 'Titre',
+      render: (val) => (
+        <div className="max-w-xs">
+          <p className="font-medium text-gray-900 line-clamp-2" 
+             style={{
+               display: '-webkit-box',
+               WebkitLineClamp: 2,
+               WebkitBoxOrient: 'vertical',
+               overflow: 'hidden',
+               textOverflow: 'ellipsis',
+               lineHeight: '1.4'
+             }}>
+            {val || '-'}
+          </p>
+        </div>
+      )
+    },
     { 
       key: 'genre', 
       label: 'Genres',
@@ -343,17 +361,20 @@ export default function Movies() {
     { 
       label: 'Modifier', 
       onClick: handleEdit, 
-      className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' 
+      className: 'text-blue-600 hover:text-blue-800',
+      icon: 'edit'
     },
     { 
       label: 'Basculer commentaires', 
       onClick: (item) => handleToggleComments(item), 
-      className: 'text-orange-600 hover:text-orange-800 font-medium text-sm' 
+      className: 'text-orange-600 hover:text-orange-800',
+      icon: 'comments'
     },
     { 
       label: 'Supprimer', 
       onClick: handleDelete, 
-      className: 'text-red-600 hover:text-red-800 font-medium text-sm' 
+      className: 'text-red-600 hover:text-red-800',
+      icon: 'delete'
     }
   ];
 

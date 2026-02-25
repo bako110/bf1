@@ -1,6 +1,13 @@
 import React from 'react';
+import DropdownActions from './DropdownActions';
 
 export default function DataTable({ columns = [], data = [], actions = [] }) {
+  const handleAction = (action, row) => {
+    if (action.onClick) {
+      action.onClick(row);
+    }
+  };
+
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
       <table className="w-full text-left text-sm">
@@ -12,7 +19,7 @@ export default function DataTable({ columns = [], data = [], actions = [] }) {
               </th>
             ))}
             {actions.length > 0 && (
-              <th className="px-6 py-4 font-semibold text-gray-900">Actions</th>
+              <th className="px-6 py-4 font-semibold text-gray-900 w-12">Actions</th>
             )}
           </tr>
         </thead>
@@ -26,17 +33,13 @@ export default function DataTable({ columns = [], data = [], actions = [] }) {
               ))}
               {actions.length > 0 && (
                 <td className="px-6 py-4">
-                  <div className="flex gap-2">
-                    {actions.map((action, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => action.onClick(row)}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${action.className}`}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
-                  </div>
+                  <DropdownActions 
+                    items={actions.map(action => ({
+                      ...action,
+                      action: action
+                    }))}
+                    onAction={(action) => handleAction(action, row)}
+                  />
                 </td>
               )}
             </tr>

@@ -174,7 +174,25 @@ export default function Shows() {
   }
 
   const columns = [
-    { key: 'title', label: 'Titre', render: (val) => String(val || '') },
+    { 
+      key: 'title', 
+      label: 'Titre', 
+      render: (val) => (
+        <div className="max-w-xs">
+          <p className="font-medium text-gray-900 line-clamp-2" 
+             style={{
+               display: '-webkit-box',
+               WebkitLineClamp: 2,
+               WebkitBoxOrient: 'vertical',
+               overflow: 'hidden',
+               textOverflow: 'ellipsis',
+               lineHeight: '1.4'
+             }}>
+            {val || '-'}
+          </p>
+        </div>
+      )
+    },
     { key: 'host', label: 'Animateur', render: (val) => String(val || '') },
     { key: 'category', label: 'Catégorie', render: (val) => String(val || '') },
     { 
@@ -185,8 +203,18 @@ export default function Shows() {
   ];
 
   const actions = [
-    { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
-    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+    { 
+      label: 'Modifier', 
+      onClick: handleEdit, 
+      className: 'text-blue-600 hover:text-blue-800',
+      icon: 'edit'
+    },
+    { 
+      label: 'Supprimer', 
+      onClick: handleDelete, 
+      className: 'text-red-600 hover:text-red-800',
+      icon: 'delete'
+    }
   ];
 
   

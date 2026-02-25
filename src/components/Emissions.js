@@ -393,7 +393,25 @@ export default function Emissions() {
 
   // Définitions des colonnes et actions pour DataTable
   const columns = [
-    { key: 'title', label: 'Titre' },
+    { 
+      key: 'title', 
+      label: 'Titre',
+      render: (val) => (
+        <div className="max-w-xs">
+          <p className="font-medium text-gray-900 line-clamp-2" 
+             style={{
+               display: '-webkit-box',
+               WebkitLineClamp: 2,
+               WebkitBoxOrient: 'vertical',
+               overflow: 'hidden',
+               textOverflow: 'ellipsis',
+               lineHeight: '1.4'
+             }}>
+            {val || '-'}
+          </p>
+        </div>
+      )
+    },
     { 
       key: 'is_active', 
       label: 'Statut',
@@ -444,15 +462,15 @@ export default function Emissions() {
   const actions = [
     {
       label: 'Modifier',
-      icon: Edit2,
+      icon: 'edit',
       onClick: (item) => handleEdit(item),
-      style: { color: 'blue' }
+      className: 'text-blue-600 hover:text-blue-800'
     },
     {
       label: 'Supprimer',
-      icon: Trash2,
+      icon: 'delete',
       onClick: (item) => handleDelete(item),
-      style: { color: 'red' }
+      className: 'text-red-600 hover:text-red-800'
     }
   ];
 
