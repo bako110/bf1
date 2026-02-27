@@ -8,7 +8,7 @@ const sections = [
   { label: 'Contrôle Live', key: 'liveControl' },
   { label: 'Calendrier', key: 'programs' },
   { label: 'Catégories', key: 'categories' },
-  { label: 'Émissions', key: 'emissions' },
+  { label: 'Sports', key: 'sports' },
   { label: 'JT et Magazines', key: 'jtandmag' },
   { label: 'Flash info', key: 'breakingNews' },
   { label: 'Films', key: 'movies' },

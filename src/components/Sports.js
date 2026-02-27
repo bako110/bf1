@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Trash2 } from 'lucide-react';
-import { emissionService } from '../services/emissionService';
+import { sportService } from '../services/sportService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -12,8 +11,8 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 
-export default function Emissions() {
-  const [emissions, setEmissions] = useState([]);
+export default function Sports() {
+  const [sports, setSports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -37,42 +36,44 @@ export default function Emissions() {
     video_file: null,
     video_source: 'url',
     is_active: true,
-    is_new: false
+    is_new: false,
+    category: 'sport',
+    sport_type: '',
+    teams: []
   });
 
-  
   useEffect(() => {
-    loadEmissions();
+    loadSports();
   }, []);
 
-  const loadEmissions = async () => {
+  const loadSports = async () => {
     try {
       setLoading(true);
-      console.log('📋 Chargement des émissions...');
-      const data = await emissionService.getAllEmissions();
-      console.log('✅ Émissions récupérées:', data);
-      console.log('📊 Nombre d\'émissions:', data.length);
+      console.log('📋 Chargement des sports...');
+      const data = await sportService.getAllSports();
+      console.log('✅ Sports récupérés:', data);
+      console.log('📊 Nombre de sports:', data.length);
       
       if (data.length === 0) {
-        console.log('📭 Aucune émission trouvée');
+        console.log('📭 Aucun sport trouvé');
         setSuccess('');
         setError('');
       } else {
-        console.log('📋 Première émission:', data[0]);
+        console.log('📋 Premier sport:', data[0]);
         setSuccess('');
         setError('');
       }
       
-      setEmissions(data);
+      setSports(data);
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des émissions:', error);
+      console.error('❌ Erreur lors du chargement des sports:', error);
       
       // Gérer les messages d'erreur spécifiques
-      let errorMessage = 'Erreur lors du chargement des émissions.';
+      let errorMessage = 'Erreur lors du chargement des sports.';
       if (error.response?.data?.detail) {
-        if (error.response.data.detail.includes('Aucune émission')) {
-          errorMessage = 'Aucune émission disponible dans la base de données.';
-          setEmissions([]); // Vider la liste
+        if (error.response.data.detail.includes('Aucun sport')) {
+          errorMessage = 'Aucun sport disponible dans la base de données.';
+          setSports([]); // Vider la liste
         } else {
           errorMessage = error.response.data.detail;
         }
@@ -185,33 +186,37 @@ export default function Emissions() {
     
     try {
       // Préparer les données selon le schéma backend
-      const emissionData = {
+      const sportData = {
         title: form.title,
         description: form.description || null,
-        category: 'emission',  // Valeur fixe
+        category: 'sport',
         subcategory: null,
+        sport_type: form.sport_type || null,
+        teams: form.teams || [],
         image: form.image || null,
         thumbnail: null,
         video_url: form.video_url || null,
         duration: null,
         date: new Date().toISOString(),
         presenter: null,
-        is_active: form.is_active !== false,
+        tags: [],
+        featured: false,
         is_new: form.is_new || false,
-        tags: []
+        is_active: form.is_active !== false
       };
       
-      console.log('📤 Données envoyées au backend:', emissionData);
+      console.log('📤 Données envoyées au backend:', sportData);
       
       if (editId) {
-        await handleEditSubmit();
-        return;
+        await sportService.updateSport(editId, sportData);
+        setSuccess('Sport modifié avec succès.');
       } else {
-        await emissionService.createEmission(emissionData);
-        setSuccess('Émission créée avec succès.');
+        await sportService.createSport(sportData);
+        setSuccess('Sport créé avec succès.');
       }
+      
       handleClose();
-      loadEmissions();
+      loadSports();
     } catch (e) {
       console.error('Erreur détaillée:', e.response?.data);
       const errorMessage = e.response?.data?.detail || 
@@ -235,7 +240,10 @@ export default function Emissions() {
       video_file: null, 
       video_source: 'url',
       is_active: true,
-      is_new: false
+      is_new: false,
+      category: 'sport',
+      sport_type: '',
+      teams: []
     });
     setError('');
     setSuccess('');
@@ -255,33 +263,33 @@ export default function Emissions() {
 
   async function confirmDelete() {
     if (!itemToDelete) return;
-    const id = itemToDelete.id; // Utiliser id (comme Breaking News)
+    const id = itemToDelete.id || itemToDelete._id; // Utiliser id ou _id
     console.log('🗑️ Tentative de suppression - ID:', id);
     console.log('🗑️ Élément complet:', itemToDelete);
     
     if (!id) {
       console.error('❌ ID undefined, élément:', itemToDelete);
-      setError('Erreur: ID de l\'émission non trouvé');
+      setError('Erreur: ID du sport non trouvé');
       return;
     }
     
     setError('');
     setSuccess('');
     try {
-      console.log('🗑️ Suppression de l\'émission:', id);
-      await emissionService.deleteEmission(id);
-      setSuccess('Émission supprimée avec succès.');
-      loadEmissions();
+      console.log('🗑️ Suppression du sport:', id);
+      await sportService.deleteSport(id);
+      setSuccess('Sport supprimé avec succès.');
+      loadSports();
     } catch (e) {
       console.error('Erreur lors de la suppression:', e.response?.data);
       let errorMessage = 'Erreur lors de la suppression.';
       
       // Gérer les messages d'erreur spécifiques
       if (e.response?.data?.detail) {
-        if (e.response.data.detail.includes('Aucune émission disponible')) {
-          errorMessage = 'Aucune émission n\'est disponible dans la base de données.';
-        } else if (e.response.data.detail.includes('non trouvée')) {
-          errorMessage = `Émission non trouvée: ${e.response.data.detail}`;
+        if (e.response.data.detail.includes('Aucun sport disponible')) {
+          errorMessage = 'Aucun sport n\'est disponible dans la base de données.';
+        } else if (e.response.data.detail.includes('non trouvé')) {
+          errorMessage = `Sport non trouvé: ${e.response.data.detail}`;
         } else {
           errorMessage = e.response.data.detail;
         }
@@ -297,7 +305,7 @@ export default function Emissions() {
   }
 
   function handleEdit(item) {
-    console.log('✏️ Édition de l\'émission:', item);
+    console.log('✏️ Édition du sport:', item);
     setForm({ 
       title: item.title || '', 
       description: item.description || '',
@@ -306,85 +314,18 @@ export default function Emissions() {
       video_file: null,
       video_source: item.video_url ? 'url' : 'file',
       is_active: item.is_active !== false,
-      is_new: item.is_new || false
+      is_new: item.is_new || false,
+      category: item.category || 'sport',
+      sport_type: item.sport_type || '',
+      teams: item.teams || []
     });
-    const id = item.id; // Utiliser id (comme Breaking News)
-    console.log('📝 ID de l\'émission à éditer:', id);
+    const id = item.id || item._id; // Utiliser id ou _id
+    console.log('📝 ID du sport à éditer:', id);
     setEditId(id);
     setIsDrawerOpen(true);
     setError('');
     setSuccess('');
   }
-
-  async function handleEditSubmit() {
-    if (!editId) {
-      setError('Aucune émission sélectionnée pour la modification.');
-      return;
-    }
-    
-    setError('');
-    setSuccess('');
-    setSubmitting(true);
-    
-    try {
-      console.log('✏️ Mise à jour de l\'émission ID:', editId);
-      
-      // Préparer les données selon le schéma backend
-      const emissionData = {
-        title: form.title,
-        description: form.description || null,
-        category: 'emission',
-        subcategory: null,
-        image: form.image || null,
-        thumbnail: null,
-        video_url: form.video_url || null,
-        duration: null,
-        date: new Date().toISOString(),
-        presenter: null,
-        is_active: form.is_active !== false,
-        is_new: form.is_new || false,
-        is_active: true,
-        tags: []
-      };
-      
-      console.log('📤 Données de mise à jour envoyées:', emissionData);
-      
-      await emissionService.updateEmission(editId, emissionData);
-      setSuccess('Émission modifiée avec succès.');
-      handleClose();
-      loadEmissions();
-    } catch (e) {
-      console.error('Erreur lors de la mise à jour:', e.response?.data);
-      let errorMessage = 'Erreur lors de la mise à jour.';
-      
-      // Gérer les messages d'erreur spécifiques
-      if (e.response?.data?.detail) {
-        if (e.response.data.detail.includes('Aucune émission disponible')) {
-          errorMessage = 'Aucune émission n\'est disponible dans la base de données.';
-        } else if (e.response.data.detail.includes('non trouvée')) {
-          errorMessage = `Émission non trouvée: ${e.response.data.detail}`;
-        } else {
-          errorMessage = e.response.data.detail;
-        }
-      } else if (e.message) {
-        errorMessage = e.message;
-      }
-      
-      setError('Erreur: ' + errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const formatDuration = (seconds) => {
-    if (!seconds) return '-';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}min`;
-    }
-    return `${minutes}min`;
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -410,6 +351,15 @@ export default function Emissions() {
             {val || '-'}
           </p>
         </div>
+      )
+    },
+    { 
+      key: 'sport_type', 
+      label: 'Type de sport',
+      render: (val) => (
+        <span className="text-sm text-gray-600">
+          {val || '-'}
+        </span>
       )
     },
     { 
@@ -478,14 +428,14 @@ export default function Emissions() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Émissions"
-          description="Créer et gérer les émissions"
+          title="Gestion des Sports"
+          description="Créer et gérer les contenus sportifs"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
-              + Nouvelle Émission
+              + Nouveau Sport
             </Button>
           }
         />
@@ -493,11 +443,11 @@ export default function Emissions() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier l\'Émission' : 'Nouvelle Émission'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Sport' : 'Nouveau Sport'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput 
               label="Titre" 
-              placeholder="Titre de l'émission" 
+              placeholder="Titre du contenu sportif" 
               value={form.title} 
               onChange={e => setForm({...form, title: e.target.value})} 
               required 
@@ -505,15 +455,25 @@ export default function Emissions() {
 
             <FormTextarea 
               label="Description" 
-              placeholder="Description de l'émission..." 
+              placeholder="Description du contenu sportif..." 
               value={form.description} 
               onChange={e => setForm({...form, description: e.target.value})} 
               rows={4} 
             />
 
+            {/* Champs spécifiques au sport */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput 
+                label="Type de sport" 
+                placeholder="Ex: Football, Basket, Tennis..." 
+                value={form.sport_type} 
+                onChange={e => setForm({...form, sport_type: e.target.value})} 
+              />
+            </div>
+
             {/* Upload Image */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Image de l'Émission</label>
+              <label className="block text-sm font-medium text-gray-700">Image du Sport</label>
               <input 
                 type="file" 
                 accept="image/*"
@@ -656,15 +616,15 @@ export default function Emissions() {
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des émissions..." />
-        ) : emissions.length === 0 ? (
+          <Loader size="lg" text="Chargement des sports..." />
+        ) : sports.length === 0 ? (
           <EmptyState 
-            title="Aucune émission" 
-            message="Aucune émission n'est disponible. Créez votre première émission pour commencer." 
+            title="Aucun sport" 
+            message="Aucun contenu sportif n'est disponible. Créez votre premier sport pour commencer." 
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable columns={columns} data={emissions} actions={actions} />
+            <DataTable columns={columns} data={sports} actions={actions} />
           </div>
         )}
       </div>
@@ -672,8 +632,8 @@ export default function Emissions() {
       {/* Modal de confirmation de suppression */}
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Supprimer l'émission"
-        message="Êtes-vous sûr de vouloir supprimer cette émission ? Cette action est irréversible."
+        title="Supprimer le sport"
+        message="Êtes-vous sûr de vouloir supprimer ce sport ? Cette action est irréversible."
         confirmText="Supprimer"
         cancelText="Annuler"
         onConfirm={confirmDelete}
@@ -685,4 +645,3 @@ export default function Emissions() {
     </div>
   );
 }
-

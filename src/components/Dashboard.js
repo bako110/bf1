@@ -26,7 +26,7 @@ export default function Dashboard() {
         // Fallback avec des valeurs par défaut
         setStats({
           users: { total: 0, growth: 0 },
-          shows: { total: 0, growth: 0 },
+          sports: { total: 0, growth: 0 },
           movies: { total: 0, growth: 0 },
           reportages: { total: 0, growth: 0 },
           reels: { total: 0, growth: 0 },
@@ -45,7 +45,7 @@ export default function Dashboard() {
 
   const cardData = [
     { key: 'users', label: 'Utilisateurs', color: 'blue' },
-    { key: 'shows', label: 'Émissions', color: 'red' },
+    { key: 'sports', label: 'Sports', color: 'red' },
     { key: 'movies', label: 'Films', color: 'purple' },
     { key: 'reportages', label: 'Reportages', color: 'indigo' },
     { key: 'reels', label: 'Reels', color: 'pink' },
