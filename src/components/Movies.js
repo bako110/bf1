@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchMovies, createMovie, updateMovie, deleteMovie } from '../services/movieService';
+import { uploadVideo } from '../services/uploadsService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -9,8 +10,8 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload'; // Composant ImageUpload
 import ConfirmModal from './ui/ConfirmModal';
-import FileUpload from './ui/FileUpload';
 import Pagination from './ui/Pagination';
 
 export default function Movies() {
@@ -27,7 +28,6 @@ export default function Movies() {
     video_file: null,
     video_url: '',
     video_source: 'file',
-    image_file: null,
     image_url: '',
     is_premium: false,
     allow_comments: true
@@ -43,11 +43,9 @@ export default function Movies() {
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
   
-  // États pour l'upload
+  // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadImageProgress, setUploadImageProgress] = useState(0);
 
   useEffect(() => {
     loadMovies();
@@ -88,7 +86,7 @@ export default function Movies() {
     }
   };
 
-  // Upload automatique vidéo
+  // Upload automatique vidéo avec uploadsService
   async function handleVideoSelect(file) {
     if (!file) return;
     setForm({...form, video_file: file});
@@ -96,82 +94,25 @@ export default function Movies() {
     setUploadVideoProgress(0);
     
     try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
-        }
+      // Utilisation du service d'upload vidéo avec callback de progression
+      const response = await uploadVideo(file, (progress) => {
+        setUploadVideoProgress(progress);
       });
       
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const videoUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, video_url: videoUrl}));
-          if (response.data?.duration) {
-            setForm(prev => ({...prev, duration: Math.ceil(response.data.duration / 60)}));
-          }
-        }
-        setUploadingVideo(false);
-      });
+      // Récupération de l'URL depuis la réponse
+      const videoUrl = response.data?.url || response.data?.secure_url || response.url;
+      setForm(prev => ({...prev, video_url: videoUrl}));
       
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload vidéo');
-        setUploadingVideo(false);
-      });
+      // Si la durée est fournie
+      if (response.data?.duration) {
+        setForm(prev => ({...prev, duration: Math.ceil(response.data.duration / 60)}));
+      }
       
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
     } catch (err) {
-      setError('Erreur: ' + err.message);
+      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+    } finally {
       setUploadingVideo(false);
-    }
-  }
-
-  // Upload automatique image
-  async function handleImageSelect(file) {
-    if (!file) return;
-    setForm({...form, image_file: file});
-    setUploadingImage(true);
-    setUploadImageProgress(0);
-    
-    try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadImageProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
-      
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const imageUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, image_url: imageUrl}));
-        }
-        setUploadingImage(false);
-      });
-      
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload image');
-        setUploadingImage(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/image');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
-    } catch (err) {
-      setError('Erreur: ' + err.message);
-      setUploadingImage(false);
+      setUploadVideoProgress(0);
     }
   }
 
@@ -180,8 +121,13 @@ export default function Movies() {
     setError('');
     setSuccess('');
     
-    if (uploadingVideo || uploadingImage) {
-      setError('Veuillez attendre la fin des uploads');
+    if (uploadingVideo) {
+      setError('Veuillez attendre la fin de l\'upload de la vidéo');
+      return;
+    }
+    
+    if (!form.video_url && !editId) {
+      setError('Veuillez sélectionner une vidéo');
       return;
     }
     
@@ -196,7 +142,8 @@ export default function Movies() {
         duration: parseInt(form.duration) || 0,
         video_url: form.video_url || null,
         image_url: form.image_url || null,
-        is_premium: form.is_premium
+        is_premium: form.is_premium,
+        allow_comments: form.allow_comments
       };
       
       if (editId) {
@@ -214,7 +161,6 @@ export default function Movies() {
       setSubmitting(false);
     }
   }
-
 
   function handleDelete(item) {
     setItemToDelete(item);
@@ -260,7 +206,7 @@ export default function Movies() {
       video_file: null,
       video_url: movie.video_url || '',
       video_source: movie.video_url ? 'url' : 'file',
-      image_file: null,
+      image_url: movie.image_url || '',
       is_premium: movie.is_premium || false,
       allow_comments: movie.allow_comments !== false
     });
@@ -281,7 +227,6 @@ export default function Movies() {
       video_file: null,
       video_url: '',
       video_source: 'file',
-      image_file: null,
       image_url: '',
       is_premium: false,
       allow_comments: true
@@ -289,8 +234,6 @@ export default function Movies() {
     setError('');
     setUploadingVideo(false);
     setUploadVideoProgress(0);
-    setUploadingImage(false);
-    setUploadImageProgress(0);
   }
 
   const columns = [
@@ -496,13 +439,27 @@ export default function Movies() {
                   <label className="block text-sm font-medium text-gray-700">
                     Fichier Vidéo <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="file" 
-                    accept="video/*"
-                    onChange={e => handleVideoSelect(e.target.files[0])}
-                    disabled={uploadingVideo}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Cliquez pour sélectionner</span> ou glissez-déposez
+                        </p>
+                        <p className="text-xs text-gray-500">MP4, WebM, OGG (MAX. 100MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="video/*"
+                        onChange={e => handleVideoSelect(e.target.files[0])}
+                        required={!editId}
+                        disabled={uploadingVideo}
+                      />
+                    </label>
+                  </div>
                   {uploadingVideo && (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
                       <div className="flex items-center justify-between mb-2">
@@ -510,13 +467,19 @@ export default function Movies() {
                         <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
                       </div>
                       <div className="w-full bg-blue-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadVideoProgress}%` }}
+                        />
                       </div>
                     </div>
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
                       <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      {form.video_file && (
+                        <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -535,35 +498,15 @@ export default function Movies() {
               )}
             </div>
 
-            {/* Upload Image */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Affiche du Film <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="file" 
-                accept="image/*"
-                onChange={e => handleImageSelect(e.target.files[0])}
-                disabled={uploadingImage}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-              />
-              {uploadingImage && (
-                <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-purple-800 font-medium">Upload image en cours...</p>
-                    <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
-                  </div>
-                  <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
-                  </div>
-                </div>
-              )}
-              {form.image_url && !uploadingImage && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                  <p className="text-sm text-green-800">Image uploadée avec succès</p>
-                </div>
-              )}
-            </div>
+            {/* Upload Image avec ImageUpload */}
+            <ImageUpload
+              label="Affiche du Film"
+              value={form.image_url}
+              onChange={(url) => setForm({...form, image_url: url})}
+              disabled={submitting}
+              helperText="Sélectionnez une image pour l'affiche du film (JPG, PNG, GIF, WebP - max 5MB)"
+              required
+            />
 
             <FormTextarea
               label="Description"
@@ -608,7 +551,7 @@ export default function Movies() {
                 type="submit"
                 variant="primary"
                 fullWidth
-                disabled={submitting}
+                disabled={submitting || uploadingVideo}
               >
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">

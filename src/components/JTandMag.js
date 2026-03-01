@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchJTandMag, createJTandMag, updateJTandMag, deleteJTandMag } from '../services/jtandmagService';
+import { uploadVideo } from '../services/uploadsService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -22,7 +23,18 @@ export default function JTandMag() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [form, setForm] = useState({ title: '', category: '', image: '', video_url: '', video_file: null, video_source: 'url', description: '', host: '', allow_comments: true, rating: 0 });
+  const [form, setForm] = useState({ 
+    title: '', 
+    category: '', 
+    image: '', 
+    video_url: '', 
+    video_file: null, 
+    video_source: 'url', 
+    description: '', 
+    host: '', 
+    allow_comments: true, 
+    rating: 0 
+  });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -85,58 +97,31 @@ export default function JTandMag() {
     }
   };
 
+  // Upload automatique vidéo avec uploadsService
   async function handleVideoSelect(file) {
     if (!file) return;
     
+    setForm({...form, video_file: file});
     setUploadingVideo(true);
     setUploadVideoProgress(0);
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100);
-          setUploadVideoProgress(progress);
-        }
+      // Utilisation du service d'upload vidéo avec callback de progression
+      const response = await uploadVideo(file, (progress) => {
+        setUploadVideoProgress(progress);
       });
       
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const videoUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, video_url: videoUrl, video_file: file}));
-          setUploadVideoProgress(100);
-        } else {
-          const errorData = JSON.parse(xhr.responseText);
-          throw new Error(errorData.detail || 'Erreur upload');
-        }
-        setUploadingVideo(false);
-      });
-      
-      xhr.addEventListener('error', () => {
-        setError('Erreur lors de l\'upload de la vidéo');
-        setForm(prev => ({...prev, video_file: null}));
-        setUploadingVideo(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
+      // Récupération de l'URL depuis la réponse
+      const videoUrl = response.data?.url || response.data?.secure_url || response.url;
+      setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur lors de l\'upload: ' + err.message);
+      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
       setForm(prev => ({...prev, video_file: null}));
+    } finally {
       setUploadingVideo(false);
+      setUploadVideoProgress(0);
     }
   }
 
@@ -152,11 +137,22 @@ export default function JTandMag() {
     
     setSubmitting(true);
     try {
+      const payload = {
+        title: form.title,
+        category: form.category,
+        image: form.image || null,
+        video_url: form.video_url || null,
+        description: form.description,
+        host: form.host,
+        allow_comments: form.allow_comments,
+        rating: form.rating || 0
+      };
+      
       if (editId) {
-        await updateJTandMag(editId, form);
+        await updateJTandMag(editId, payload);
         setSuccess('JT et Magazine modifié avec succès.');
       } else {
-        await createJTandMag(form);
+        await createJTandMag(payload);
         setSuccess('JT et Magazine créé avec succès.');
       }
       handleClose();
@@ -211,7 +207,8 @@ export default function JTandMag() {
       video_source: item.video_url ? 'url' : 'file',
       description: item.description || '',
       host: item.host || '',
-      allow_comments: item.allow_comments !== false  // Par défaut true si non défini
+      allow_comments: item.allow_comments !== false,
+      rating: item.rating || 0
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -220,7 +217,18 @@ export default function JTandMag() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', category: '', image: '', video_url: '', video_file: null, video_source: 'url', description: '', host: '', allow_comments: true });
+    setForm({ 
+      title: '', 
+      category: '', 
+      image: '', 
+      video_url: '', 
+      video_file: null, 
+      video_source: 'url', 
+      description: '', 
+      host: '', 
+      allow_comments: true,
+      rating: 0 
+    });
     setError('');
     setUploadingVideo(false);
     setUploadVideoProgress(0);
@@ -356,13 +364,13 @@ export default function JTandMag() {
               value={form.image}
               onChange={(url) => setForm({...form, image: url})}
               disabled={submitting}
-              helperText="Sélectionnez une image pour le JT/Magazine"
+              helperText="Sélectionnez une image pour le JT/Magazine (JPG, PNG, GIF, WebP - max 5MB)"
             />
 
             {/* Choix source vidéo */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">
-                Source de la Vidéo (Optionnel)
+                Source de la Vidéo
               </label>
               <div className="flex gap-4">
                 <label className="flex items-center cursor-pointer">
@@ -391,6 +399,9 @@ export default function JTandMag() {
 
               {form.video_source === 'file' ? (
                 <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fichier Vidéo
+                  </label>
                   <div className="flex items-center justify-center w-full">
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -429,7 +440,7 @@ export default function JTandMag() {
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">
                           Fichier: {form.video_file.name}
@@ -483,7 +494,7 @@ export default function JTandMag() {
                 type="submit" 
                 variant="primary" 
                 fullWidth
-                disabled={submitting}
+                disabled={submitting || uploadingVideo}
               >
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -494,7 +505,7 @@ export default function JTandMag() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? 'Mettre à jour' : 'Créer'
+                  editId ? '💾 Mettre à jour' : '✨ Créer'
                 )}
               </Button>
               <Button 
@@ -504,19 +515,19 @@ export default function JTandMag() {
                 onClick={handleClose}
                 disabled={submitting}
               >
-                Annuler
+                ❌ Annuler
               </Button>
             </div>
           </form>
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des émissions tendances..." />
+          <Loader size="lg" text="Chargement des JT et magazines..." />
         ) : items.length === 0 ? (
           <EmptyState 
             icon="📺"
-            title="Aucune émission tendance"
-            message="Créez votre première émission tendance pour la voir apparaître ici."
+            title="Aucune émission"
+            message="Créez votre première émission pour la voir apparaître ici."
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">

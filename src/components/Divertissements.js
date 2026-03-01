@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchDivertissements, createDivertissement, updateDivertissement, deleteDivertissement } from '../services/divertissementService';
+import { uploadVideo } from '../services/uploadsService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -10,6 +11,7 @@ import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import FormSelect from './ui/FormSelect';
 import EmptyState from './ui/EmptyState';
+import ImageUpload from './ui/ImageUpload'; // Composant ImageUpload
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
 import { fetchCategories } from '../services/categoryService';
@@ -18,7 +20,17 @@ export default function Divertissements() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', category: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', allow_comments: true });
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ 
+    title: '', 
+    category: '', 
+    description: '', 
+    image: '', 
+    video_url: '', 
+    video_file: null, 
+    video_source: 'file', 
+    allow_comments: true 
+  });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -28,11 +40,9 @@ export default function Divertissements() {
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
   
-  // États pour l'upload
+  // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadImageProgress, setUploadImageProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -86,7 +96,7 @@ export default function Divertissements() {
     }
   };
 
-  // Upload automatique vidéo
+  // Upload automatique vidéo avec uploadsService
   async function handleVideoSelect(file) {
     if (!file) return;
     setForm({...form, video_file: file});
@@ -94,78 +104,20 @@ export default function Divertissements() {
     setUploadVideoProgress(0);
     
     try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
-        }
+      // Utilisation du service d'upload vidéo avec callback de progression
+      const response = await uploadVideo(file, (progress) => {
+        setUploadVideoProgress(progress);
       });
       
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const videoUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, video_url: videoUrl}));
-        }
-        setUploadingVideo(false);
-      });
+      // Récupération de l'URL depuis la réponse
+      const videoUrl = response.data?.url || response.data?.secure_url || response.url;
+      setForm(prev => ({...prev, video_url: videoUrl}));
       
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload vidéo');
-        setUploadingVideo(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
     } catch (err) {
-      setError('Erreur: ' + err.message);
+      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+    } finally {
       setUploadingVideo(false);
-    }
-  }
-
-  // Upload automatique image
-  async function handleImageSelect(file) {
-    if (!file) return;
-    setUploadingImage(true);
-    setUploadImageProgress(0);
-    
-    try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadImageProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
-      
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const imageUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, image: imageUrl}));
-        }
-        setUploadingImage(false);
-      });
-      
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload image');
-        setUploadingImage(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/image');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
-    } catch (err) {
-      setError('Erreur: ' + err.message);
-      setUploadingImage(false);
+      setUploadVideoProgress(0);
     }
   }
 
@@ -174,10 +126,17 @@ export default function Divertissements() {
     setError('');
     setSuccess('');
     
-    if (uploadingVideo || uploadingImage) {
-      setError('Veuillez attendre la fin des uploads');
+    if (uploadingVideo) {
+      setError('Veuillez attendre la fin de l\'upload de la vidéo');
       return;
     }
+    
+    if (!form.video_url && !editId) {
+      setError('Veuillez sélectionner une vidéo');
+      return;
+    }
+    
+    setSubmitting(true);
     
     try {
       const payload = {
@@ -185,7 +144,8 @@ export default function Divertissements() {
         category: form.category,
         description: form.description,
         image: form.image || null,
-        video_url: form.video_url || null
+        video_url: form.video_url || null,
+        allow_comments: form.allow_comments
       };
       
       if (editId) {
@@ -199,18 +159,27 @@ export default function Divertissements() {
       loadDivertissements();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+    } finally {
+      setSubmitting(false);
     }
   }
 
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', category: '', description: '', image: '', video_url: '', video_file: null, video_source: 'file', allow_comments: true });
+    setForm({ 
+      title: '', 
+      category: '', 
+      description: '', 
+      image: '', 
+      video_url: '', 
+      video_file: null, 
+      video_source: 'file', 
+      allow_comments: true 
+    });
     setError('');
     setUploadingVideo(false);
     setUploadVideoProgress(0);
-    setUploadingImage(false);
-    setUploadImageProgress(0);
   }
 
   function handleDelete(item) {
@@ -377,7 +346,14 @@ export default function Divertissements() {
 
         <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Divertissement' : 'Nouveau Divertissement'}>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <FormInput label="Titre du divertissement" placeholder="Titre du divertissement" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+            <FormInput 
+              label="Titre du divertissement" 
+              placeholder="Titre du divertissement" 
+              value={form.title} 
+              onChange={e => setForm({...form, title: e.target.value})} 
+              required 
+            />
+            
             <FormSelect
               label="Catégorie"
               value={form.category}
@@ -386,7 +362,15 @@ export default function Divertissements() {
               required
               helperText="Sélectionnez une catégorie existante ou créez-en une dans la section Catégories"
             />
-            <FormTextarea label="Description" placeholder="Description ou contenu..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={4} required />
+            
+            <FormTextarea 
+              label="Description" 
+              placeholder="Description ou contenu..." 
+              value={form.description} 
+              onChange={e => setForm({...form, description: e.target.value})} 
+              rows={4} 
+              required 
+            />
             
             {/* Sélecteur de source vidéo */}
             <div className="space-y-3">
@@ -419,14 +403,30 @@ export default function Divertissements() {
               {/* Option Fichier */}
               {form.video_source === 'file' && (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Fichier Vidéo</label>
-                  <input 
-                    type="file" 
-                    accept="video/*"
-                    onChange={e => handleVideoSelect(e.target.files[0])}
-                    disabled={uploadingVideo}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fichier Vidéo <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Cliquez pour sélectionner</span> ou glissez-déposez
+                        </p>
+                        <p className="text-xs text-gray-500">MP4, WebM, OGG (MAX. 100MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="video/*"
+                        onChange={e => handleVideoSelect(e.target.files[0])}
+                        required={!editId}
+                        disabled={uploadingVideo}
+                      />
+                    </label>
+                  </div>
                   {uploadingVideo && (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
                       <div className="flex items-center justify-between mb-2">
@@ -434,13 +434,19 @@ export default function Divertissements() {
                         <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
                       </div>
                       <div className="w-full bg-blue-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadVideoProgress}%` }}
+                        />
                       </div>
                     </div>
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
                       <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      {form.video_file && (
+                        <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -454,37 +460,20 @@ export default function Divertissements() {
                   type="url"
                   value={form.video_url}
                   onChange={e => setForm({...form, video_url: e.target.value})}
+                  required
                 />
               )}
             </div>
 
-            {/* Upload Image */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Image de l'Interview</label>
-              <input 
-                type="file" 
-                accept="image/*"
-                onChange={e => handleImageSelect(e.target.files[0])}
-                disabled={uploadingImage}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-              />
-              {uploadingImage && (
-                <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-purple-800 font-medium">Upload image...</p>
-                    <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
-                  </div>
-                  <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
-                  </div>
-                </div>
-              )}
-              {form.image && !uploadingImage && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                  <p className="text-sm text-green-800">Image uploadée ✓</p>
-                </div>
-              )}
-            </div>
+            {/* Upload Image avec ImageUpload */}
+            <ImageUpload
+              label="Image du Divertissement"
+              value={form.image}
+              onChange={(url) => setForm({...form, image: url})}
+              disabled={submitting}
+              helperText="Sélectionnez une image pour le divertissement (JPG, PNG, GIF, WebP - max 5MB)"
+              required
+            />
 
             {/* Option pour désactiver les commentaires */}
             <div className="space-y-2">
@@ -500,14 +489,36 @@ export default function Divertissements() {
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
-                Cochez cette case si vous ne voulez pas autoriser les commentaires sur cette interview.
-                Les utilisateurs pourront voir l'interview mais ne pourront pas commenter.
+                Cochez cette case si vous ne voulez pas autoriser les commentaires sur ce divertissement.
+                Les utilisateurs pourront voir le divertissement mais ne pourront pas commenter.
               </p>
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" variant="primary" fullWidth>{editId ? 'Mettre à jour' : 'Créer'}</Button>
-              <Button type="button" variant="ghost" fullWidth onClick={handleClose}>Annuler</Button>
+              <Button 
+                type="submit" 
+                variant="primary" 
+                fullWidth
+                disabled={submitting || uploadingVideo}
+              >
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {editId ? 'Modification...' : 'Création...'}
+                  </span>
+                ) : (
+                  editId ? 'Mettre à jour' : 'Créer'
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                fullWidth 
+                onClick={handleClose}
+                disabled={submitting}
+              >
+                Annuler
+              </Button>
             </div>
           </form>
         </Drawer>

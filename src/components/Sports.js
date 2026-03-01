@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { sportService } from '../services/sportService';
+import { uploadVideo } from '../services/uploadService'; // Import du service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import Button from './ui/Button';
+import ImageUpload from './ui/ImageUpload';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
@@ -22,11 +24,9 @@ export default function Sports() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   
-  // États pour l'upload
+  // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadImageProgress, setUploadImageProgress] = useState(0);
   
   const [form, setForm] = useState({
     title: '',
@@ -88,7 +88,7 @@ export default function Sports() {
     }
   };
 
-  // Upload automatique vidéo
+  // Upload automatique vidéo avec le service existant
   async function handleVideoSelect(file) {
     if (!file) return;
     setForm({...form, video_file: file});
@@ -96,78 +96,36 @@ export default function Sports() {
     setUploadVideoProgress(0);
     
     try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
+      // Simulation de progression (car le service n'a pas de callback de progression)
+      const progressInterval = setInterval(() => {
+        setUploadVideoProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 300);
       
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
+      // Utilisation du service d'upload vidéo existant
+      const result = await uploadVideo(file);
       
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const videoUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, video_url: videoUrl}));
-        }
+      clearInterval(progressInterval);
+      setUploadVideoProgress(100);
+      
+      // Le service retourne { url, public_id, ... }
+      setForm(prev => ({...prev, video_url: result.url}));
+      
+      // Petite pause pour voir la progression à 100%
+      setTimeout(() => {
         setUploadingVideo(false);
-      });
+        setUploadVideoProgress(0);
+      }, 500);
       
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload vidéo');
-        setUploadingVideo(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
     } catch (err) {
-      setError('Erreur: ' + err.message);
+      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
       setUploadingVideo(false);
-    }
-  }
-
-  // Upload automatique image
-  async function handleImageSelect(file) {
-    if (!file) return;
-    setUploadingImage(true);
-    setUploadImageProgress(0);
-    
-    try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadImageProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
-      
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const imageUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, image: imageUrl}));
-        }
-        setUploadingImage(false);
-      });
-      
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload image');
-        setUploadingImage(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/image');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
-    } catch (err) {
-      setError('Erreur: ' + err.message);
-      setUploadingImage(false);
+      setUploadVideoProgress(0);
     }
   }
 
@@ -249,8 +207,6 @@ export default function Sports() {
     setSuccess('');
     setUploadingVideo(false);
     setUploadVideoProgress(0);
-    setUploadingImage(false);
-    setUploadImageProgress(0);
   }
 
   function handleDelete(item) {
@@ -471,33 +427,14 @@ export default function Sports() {
               />
             </div>
 
-            {/* Upload Image */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Image du Sport</label>
-              <input 
-                type="file" 
-                accept="image/*"
-                onChange={e => handleImageSelect(e.target.files[0])}
-                disabled={uploadingImage}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-              />
-              {uploadingImage && (
-                <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-purple-800 font-medium">Upload image...</p>
-                    <span className="text-sm text-purple-600">{uploadImageProgress}%</span>
-                  </div>
-                  <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: `${uploadImageProgress}%` }} />
-                  </div>
-                </div>
-              )}
-              {form.image && !uploadingImage && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                  <p className="text-sm text-green-800">Image uploadée</p>
-                </div>
-              )}
-            </div>
+            {/* Upload Image - Utilise le composant ImageUpload qui utilise déjà uploadService */}
+            <ImageUpload
+              label="Image du Sport"
+              value={form.image}
+              onChange={(url) => setForm({...form, image: url})}
+              disabled={submitting}
+              helperText="Sélectionnez une image pour le sport (JPG, PNG, GIF, WebP - max 5MB)"
+            />
 
             {/* Sélecteur de source vidéo */}
             <div className="space-y-3">
@@ -551,7 +488,12 @@ export default function Sports() {
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">Video uploadée</p>
+                      <p className="text-sm text-green-800 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Vidéo uploadée avec succès
+                      </p>
                     </div>
                   )}
                 </div>
@@ -598,12 +540,12 @@ export default function Sports() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" variant="primary" fullWidth disabled={submitting}>
+              <Button type="submit" variant="primary" fullWidth disabled={submitting || uploadingVideo}>
                 {submitting ? (
-                  <>
+                  <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     {editId ? 'Modification...' : 'Création...'}
-                  </>
+                  </span>
                 ) : (
                   editId ? 'Mettre à jour' : 'Créer'
                 )}

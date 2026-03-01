@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchArchives, createArchive, updateArchive, deleteArchive } from '../services/archiveService';
+import { uploadVideo } from '../services/uploadsService'; // Service d'upload vidéo
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -96,14 +97,55 @@ export default function Archives() {
     }
   };
 
+  // Upload automatique vidéo avec uploadsService
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    setForm({...form, video_file: file});
+    setUploadingVideo(true);
+    setUploadVideoProgress(0);
+    
+    try {
+      // Utilisation du service d'upload vidéo avec callback de progression
+      const response = await uploadVideo(file, (progress) => {
+        setUploadVideoProgress(progress);
+      });
+      
+      // Récupération de l'URL depuis la réponse
+      const videoUrl = response.data?.url || response.data?.secure_url || response.url;
+      setForm(prev => ({...prev, video_url: videoUrl}));
+      
+    } catch (err) {
+      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setUploadingVideo(false);
+      setUploadVideoProgress(0);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (uploadingVideo) {
+      setError('Veuillez attendre la fin de l\'upload de la vidéo');
+      return;
+    }
+    
+    if (!form.video_url && !editId) {
+      setError('Veuillez sélectionner une vidéo');
+      return;
+    }
+    
     setSubmitting(true);
+    
     try {
       const payload = {
-        ...form,
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        thumbnail: form.thumbnail || null,
+        video_url: form.video_url || null,
         price: parseFloat(form.price) || 0,
         archived_date: new Date(form.archived_date).toISOString()
       };
@@ -142,48 +184,6 @@ export default function Archives() {
     } finally {
       setDeleteModalOpen(false);
       setItemToDelete(null);
-    }
-  }
-
-  // Upload automatique vidéo
-  async function handleVideoSelect(file) {
-    if (!file) return;
-    setForm({...form, video_file: file});
-    setUploadingVideo(true);
-    setUploadVideoProgress(0);
-    
-    try {
-      const token = localStorage.getItem('admin_token');
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          setUploadVideoProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
-      
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const videoUrl = response.data?.url || response.data?.secure_url;
-          setForm(prev => ({...prev, video_url: videoUrl}));
-        }
-        setUploadingVideo(false);
-      });
-      
-      xhr.addEventListener('error', () => {
-        setError('Erreur upload vidéo');
-        setUploadingVideo(false);
-      });
-      
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send(formData);
-    } catch (err) {
-      setError('Erreur: ' + err.message);
-      setUploadingVideo(false);
     }
   }
 
@@ -253,218 +253,257 @@ export default function Archives() {
   ];
 
   return (
-    <div className="p-8">
-      <PageHeader
-        title="Archives Vidéo"
-        description="Gérer les archives vidéo premium"
-        action={
-          <Button 
-            onClick={() => setIsDrawerOpen(true)}
-            variant="primary"
-            disabled={submitting}
-          >
-            + Nouvelle Archive
-          </Button>
-        }
-      />
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        <PageHeader
+          title="Archives Vidéo"
+          description="Gérer les archives vidéo premium"
+          action={
+            <Button 
+              onClick={() => setIsDrawerOpen(true)}
+              variant="primary"
+              disabled={submitting}
+            >
+              + Nouvelle Archive
+            </Button>
+          }
+        />
 
-      {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
-      {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+        {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
+        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-      {/* Bouton charger plus */}
-      {items.length > 0 && currentPage < totalPages && (
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={handleLoadMore}
-            disabled={paginationLoading}
-            className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {paginationLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Chargement...
-              </>
-            ) : (
-              <>
-                Charger plus d'archives ({items.length}/{totalItems})
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier l\'Archive' : '➕ Nouvelle Archive'}>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
-            <p className="text-sm text-purple-800">
-              <strong>💎 Archives Premium :</strong> Les archives sont des contenus vidéo premium accessibles uniquement aux abonnés ou via achat individuel.
-            </p>
+        {/* Bouton charger plus */}
+        {items.length > 0 && currentPage < totalPages && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={paginationLoading}
+              className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {paginationLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  Charger plus d'archives ({items.length}/{totalItems})
+                </>
+              )}
+            </button>
           </div>
+        )}
 
-          <FormInput
-            label="Titre"
-            placeholder="Titre de l'archive"
-            value={form.title}
-            onChange={e => setForm({...form, title: e.target.value})}
-            required
-          />
-
-          <FormTextarea
-            label="Description"
-            placeholder="Description détaillée"
-            value={form.description}
-            onChange={e => setForm({...form, description: e.target.value})}
-            rows={4}
-            required
-          />
-
-          <FormSelect
-            label="Catégorie"
-            value={form.category}
-            onChange={e => setForm({...form, category: e.target.value})}
-            options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
-            required
-          />
-
-          <ImageUpload
-            label="Miniature"
-            value={form.thumbnail}
-            onChange={(url) => setForm({...form, thumbnail: url})}
-            helperText="URL de l'image de couverture"
-          />
-
-          {/* Sélecteur de source vidéo */}
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
-            <div className="flex gap-4">
-              <label className="flex items-center cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="video_source"
-                  value="file"
-                  checked={form.video_source === 'file'}
-                  onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="video_source"
-                  value="url"
-                  checked={form.video_source === 'url'}
-                  onChange={e => setForm({...form, video_source: 'url', video_file: null})}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
-              </label>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier l\'Archive' : '➕ Nouvelle Archive'}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
+              <p className="text-sm text-purple-800">
+                <strong>💎 Archives Premium :</strong> Les archives sont des contenus vidéo premium accessibles uniquement aux abonnés ou via achat individuel.
+              </p>
             </div>
 
-            {/* Option Fichier */}
-            {form.video_source === 'file' && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Fichier Vidéo <span className="text-red-500">*</span>
+            <FormInput
+              label="Titre"
+              placeholder="Titre de l'archive"
+              value={form.title}
+              onChange={e => setForm({...form, title: e.target.value})}
+              required
+            />
+
+            <FormTextarea
+              label="Description"
+              placeholder="Description détaillée"
+              value={form.description}
+              onChange={e => setForm({...form, description: e.target.value})}
+              rows={4}
+              required
+            />
+
+            <FormSelect
+              label="Catégorie"
+              value={form.category}
+              onChange={e => setForm({...form, category: e.target.value})}
+              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
+              required
+            />
+
+            <ImageUpload
+              label="Miniature"
+              value={form.thumbnail}
+              onChange={(url) => setForm({...form, thumbnail: url})}
+              disabled={submitting}
+              helperText="Sélectionnez une image pour la miniature (JPG, PNG, GIF, WebP - max 5MB)"
+            />
+
+            {/* Sélecteur de source vidéo */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
+              <div className="flex gap-4">
+                <label className="flex items-center cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="video_source"
+                    value="file"
+                    checked={form.video_source === 'file'}
+                    onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
                 </label>
-                <input 
-                  type="file" 
-                  accept="video/*"
-                  onChange={e => handleVideoSelect(e.target.files[0])}
-                  disabled={uploadingVideo}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                {uploadingVideo && (
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
-                      <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
-                    </div>
-                  </div>
-                )}
-                {form.video_url && !uploadingVideo && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                    <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
-                  </div>
-                )}
+                <label className="flex items-center cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="video_source"
+                    value="url"
+                    checked={form.video_source === 'url'}
+                    onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                </label>
               </div>
-            )}
 
-            {/* Option URL */}
-            {form.video_source === 'url' && (
-              <FormInput
-                label="URL de la Vidéo"
-                placeholder="https://exemple.com/video.mp4"
-                type="url"
-                value={form.video_url}
-                onChange={e => setForm({...form, video_url: e.target.value})}
-                required
-              />
-            )}
+              {/* Option Fichier */}
+              {form.video_source === 'file' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fichier Vidéo <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Cliquez pour sélectionner</span> ou glissez-déposez
+                        </p>
+                        <p className="text-xs text-gray-500">MP4, WebM, OGG (MAX. 100MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="video/*"
+                        onChange={e => handleVideoSelect(e.target.files[0])}
+                        required={!editId}
+                        disabled={uploadingVideo}
+                      />
+                    </label>
+                  </div>
+                  {uploadingVideo && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
+                        <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadVideoProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {form.video_url && !uploadingVideo && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
+                      {form.video_file && (
+                        <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Option URL */}
+              {form.video_source === 'url' && (
+                <FormInput
+                  label="URL de la Vidéo"
+                  placeholder="https://exemple.com/video.mp4"
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => setForm({...form, video_url: e.target.value})}
+                  required
+                />
+              )}
+            </div>
+
+            <FormInput
+              label="Prix (FCFA)"
+              type="number"
+              placeholder="1000"
+              value={form.price}
+              onChange={e => setForm({...form, price: e.target.value})}
+              min="0"
+              helperText="Prix pour achat individuel"
+              required
+            />
+
+            <FormInput
+              label="Date d'archivage"
+              type="date"
+              value={form.archived_date}
+              onChange={e => setForm({...form, archived_date: e.target.value})}
+              required
+            />
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                type="submit" 
+                variant="primary"
+                disabled={submitting || uploadingVideo}
+              >
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Enregistrement...
+                  </span>
+                ) : (
+                  editId ? '💾 Modifier' : '✨ Créer'
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={handleCloseDrawer} 
+                disabled={submitting}
+              >
+                ❌ Annuler
+              </Button>
+            </div>
+          </form>
+        </Drawer>
+
+        {loading ? (
+          <Loader size="lg" text="Chargement des archives..." />
+        ) : items.length === 0 ? (
+          <EmptyState 
+            icon="📹"
+            title="Aucune archive"
+            message="Créez votre première archive pour la voir apparaître ici."
+          />
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <DataTable 
+              columns={columns}
+              data={items}
+              actions={actions}
+            />
+            
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
+            />
           </div>
-
-          <FormInput
-            label="Prix (FCFA)"
-            type="number"
-            placeholder="1000"
-            value={form.price}
-            onChange={e => setForm({...form, price: e.target.value})}
-            min="0"
-            helperText="Prix pour achat individuel"
-            required
-          />
-
-          <FormInput
-            label="Date d'archivage"
-            type="date"
-            value={form.archived_date}
-            onChange={e => setForm({...form, archived_date: e.target.value})}
-            required
-          />
-
-          <div className="flex gap-3 pt-4">
-            <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting ? 'Enregistrement...' : (editId ? 'Modifier' : 'Créer')}
-            </Button>
-            <Button type="button" variant="secondary" onClick={handleCloseDrawer} disabled={submitting}>
-              Annuler
-            </Button>
-          </div>
-        </form>
-      </Drawer>
-
-      {loading ? (
-        <Loader size="lg" text="Chargement des archives..." />
-      ) : items.length === 0 ? (
-        <EmptyState 
-          icon="📹"
-          title="Aucune archive"
-          message="Créez votre première archive pour la voir apparaître ici."
-        />
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <DataTable 
-            columns={columns}
-            data={items}
-            actions={actions}
-          />
-          
-          {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={handlePageChange}
-            hasNextPage={currentPage < totalPages}
-            hasPrevPage={currentPage > 1}
-            loading={paginationLoading}
-          />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Modal de confirmation de suppression */}
       <ConfirmModal
