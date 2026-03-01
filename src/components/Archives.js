@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchArchives, createArchive, updateArchive, deleteArchive } from '../services/archiveService';
-import { uploadVideo } from '../services/uploadsService'; // Service d'upload vidéo
+import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
