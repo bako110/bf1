@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sportService } from '../services/sportService';
-import { uploadVideo } from '../services/uploadService'; // Import du service d'upload vidéo
+import { uploadVideo } from '../services/uploadService'; // Correction: utilisation du bon service
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -88,7 +88,7 @@ export default function Sports() {
     }
   };
 
-  // Upload automatique vidéo avec le service existant
+  // Upload automatique vidéo avec le service (version corrigée avec vraie progression)
   async function handleVideoSelect(file) {
     if (!file) return;
     setForm({...form, video_file: file});
@@ -96,34 +96,19 @@ export default function Sports() {
     setUploadVideoProgress(0);
     
     try {
-      // Simulation de progression (car le service n'a pas de callback de progression)
-      const progressInterval = setInterval(() => {
-        setUploadVideoProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 300);
+      // Utilisation du service d'upload vidéo avec callback de progression
+      const response = await uploadVideo(file, (progress) => {
+        setUploadVideoProgress(progress);
+      });
       
-      // Utilisation du service d'upload vidéo existant
-      const result = await uploadVideo(file);
-      
-      clearInterval(progressInterval);
-      setUploadVideoProgress(100);
-      
-      // Le service retourne { url, public_id, ... }
-      setForm(prev => ({...prev, video_url: result.url}));
-      
-      // Petite pause pour voir la progression à 100%
-      setTimeout(() => {
-        setUploadingVideo(false);
-        setUploadVideoProgress(0);
-      }, 500);
+      // Récupération de l'URL depuis la réponse
+      const videoUrl = response.data?.url || response.data?.secure_url || response.url;
+      setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
       setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setForm(prev => ({...prev, video_file: null}));
+    } finally {
       setUploadingVideo(false);
       setUploadVideoProgress(0);
     }
@@ -337,7 +322,7 @@ export default function Sports() {
           ) : (
             <>
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 001.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               Actif
             </>
@@ -401,6 +386,12 @@ export default function Sports() {
 
         <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Sport' : 'Nouveau Sport'}>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+              <p className="text-sm text-green-800">
+                <strong>⚽ Astuce :</strong> Ajoutez les actualités et contenus sportifs les plus récents.
+              </p>
+            </div>
+
             <FormInput 
               label="Titre" 
               placeholder="Titre du contenu sportif" 
@@ -427,7 +418,7 @@ export default function Sports() {
               />
             </div>
 
-            {/* Upload Image - Utilise le composant ImageUpload qui utilise déjà uploadService */}
+            {/* Upload Image */}
             <ImageUpload
               label="Image du Sport"
               value={form.image}
@@ -449,7 +440,7 @@ export default function Sports() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -460,7 +451,7 @@ export default function Sports() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
                 </label>
               </div>
 
@@ -468,13 +459,26 @@ export default function Sports() {
               {form.video_source === 'file' && (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Fichier Vidéo</label>
-                  <input 
-                    type="file" 
-                    accept="video/*"
-                    onChange={e => handleVideoSelect(e.target.files[0])}
-                    disabled={uploadingVideo}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg className="w-8 h-8 mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Cliquez pour sélectionner une vidéo</span>
+                        </p>
+                        <p className="text-xs text-gray-500">MP4, WebM, MOV (MAX. 100MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="video/*"
+                        onChange={e => handleVideoSelect(e.target.files[0])}
+                        disabled={uploadingVideo}
+                      />
+                    </label>
+                  </div>
                   {uploadingVideo && (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
                       <div className="flex items-center justify-between mb-2">
@@ -482,18 +486,19 @@ export default function Sports() {
                         <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
                       </div>
                       <div className="w-full bg-blue-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadVideoProgress}%` }} />
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadVideoProgress}%` }}
+                        />
                       </div>
                     </div>
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800 flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Vidéo uploadée avec succès
-                      </p>
+                      <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
+                      {form.video_file && (
+                        <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -540,18 +545,29 @@ export default function Sports() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" variant="primary" fullWidth disabled={submitting || uploadingVideo}>
+              <Button 
+                type="submit" 
+                variant="primary" 
+                fullWidth 
+                disabled={submitting || uploadingVideo}
+              >
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     {editId ? 'Modification...' : 'Création...'}
                   </span>
                 ) : (
-                  editId ? 'Mettre à jour' : 'Créer'
+                  editId ? '💾 Mettre à jour' : '✨ Créer'
                 )}
               </Button>
-              <Button type="button" variant="ghost" fullWidth onClick={handleClose} disabled={submitting}>
-                Annuler
+              <Button 
+                type="button" 
+                variant="ghost" 
+                fullWidth 
+                onClick={handleClose} 
+                disabled={submitting}
+              >
+                ❌ Annuler
               </Button>
             </div>
           </form>
@@ -561,6 +577,7 @@ export default function Sports() {
           <Loader size="lg" text="Chargement des sports..." />
         ) : sports.length === 0 ? (
           <EmptyState 
+            icon="⚽"
             title="Aucun sport" 
             message="Aucun contenu sportif n'est disponible. Créez votre premier sport pour commencer." 
           />
