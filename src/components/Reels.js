@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchReels, createReel, updateReel, deleteReel } from '../services/reelService';
-import { uploadVideo } from '../services/uploadsService'; // Service d'upload vidéo
+import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';

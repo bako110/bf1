@@ -34,6 +34,7 @@ import Archives from './components/Archives';
 import LiveControlScreen from './screens/LiveControlScreen';
 import Categories from './components/Categories';
 import Sports from './components/Sports';
+import EmissionCategoriesScreen from './screens/EmissionCategoriesScreen';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -92,6 +93,7 @@ function App() {
           {section === 'archives' && <Archives />}
           {section === 'liveControl' && <LiveControlScreen />}
           {section === 'sports' && <Sports />}
+          {section === 'emissionCategories' && <EmissionCategoriesScreen />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}
