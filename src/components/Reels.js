@@ -441,12 +441,11 @@ export default function Reels() {
             </div>
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description du reel..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
-              required
             />
 
             {/* Option pour désactiver les commentaires */}
