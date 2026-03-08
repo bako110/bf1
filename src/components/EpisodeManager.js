@@ -332,7 +332,6 @@ export default function EpisodeManager({ series, onClose }) {
       isOpen={true}
       onClose={onClose}
       title={`Épisodes - ${series?.title}`}
-      size="2xl"
     >
       <div className="space-y-6">
         {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -442,7 +441,6 @@ export default function EpisodeManager({ series, onClose }) {
             isOpen={showForm}
             onClose={handleCloseForm}
             title={editingEpisode ? 'Modifier l\'épisode' : 'Nouvel épisode'}
-            size="xl"
           >
             <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto">
               {/* Informations de base */}

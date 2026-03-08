@@ -1,10 +1,20 @@
 import React from 'react';
 import DropdownActions from './DropdownActions';
 
-export default function DataTable({ columns = [], data = [], actions = [] }) {
+export default function DataTable({ columns = [], data = [], actions = [], onRowClick }) {
   const handleAction = (action, row) => {
     if (action.onClick) {
       action.onClick(row);
+    }
+  };
+
+  const handleRowClick = (row, e) => {
+    // Ne pas déclencher le clic de ligne si on clique sur les actions
+    if (e.target.closest('button') || e.target.closest('[role="button"]')) {
+      return;
+    }
+    if (onRowClick) {
+      onRowClick(row);
     }
   };
 
@@ -25,7 +35,13 @@ export default function DataTable({ columns = [], data = [], actions = [] }) {
         </thead>
         <tbody>
           {data.map((row, idx) => (
-            <tr key={row.id || idx} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+            <tr 
+              key={row.id || idx} 
+              onClick={(e) => handleRowClick(row, e)}
+              className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
+                onRowClick ? 'cursor-pointer' : ''
+              }`}
+            >
               {columns.map((col) => (
                 <td key={col.key} className="px-6 py-4 text-gray-700">
                   {col.render ? col.render(row[col.key], row) : (row[col.key] || '-')}

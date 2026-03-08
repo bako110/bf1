@@ -209,7 +209,6 @@ export default function SeasonManager({ series, onClose }) {
       isOpen={true}
       onClose={onClose}
       title={`Saisons - ${series?.title}`}
-      size="xl"
     >
       <div className="space-y-6">
         {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -330,7 +329,6 @@ export default function SeasonManager({ series, onClose }) {
             isOpen={showForm}
             onClose={handleCloseForm}
             title={editingSeason ? 'Modifier la saison' : 'Nouvelle saison'}
-            size="lg"
           >
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">

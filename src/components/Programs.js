@@ -14,6 +14,7 @@ import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
+import DetailView from './ui/DetailView';
 
 export default function Programs() {
   const [programs, setPrograms] = useState([]);
@@ -40,6 +41,10 @@ export default function Programs() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [categories, setCategories] = useState([]);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     loadPrograms();
@@ -207,6 +212,12 @@ export default function Programs() {
     { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
   ];
 
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -361,6 +372,7 @@ export default function Programs() {
               columns={columns}
               data={programs}
               actions={actions}
+              onRowClick={handleRowClick}
             />
             
             {/* Pagination */}
@@ -392,6 +404,45 @@ export default function Programs() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails du programme"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'image_url', label: 'Image', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'type', label: 'Type' },
+              { key: 'host', label: 'Présentateur' },
+              { key: 'start_time', label: 'Heure de début' },
+              { key: 'end_time', label: 'Heure de fin' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

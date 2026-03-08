@@ -13,6 +13,7 @@ import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload'; // Composant ImageUpload
 import ConfirmModal from './ui/ConfirmModal';
 import Pagination from './ui/Pagination';
+import DetailView from './ui/DetailView';
 
 export default function Movies() {
   const [movies, setMovies] = useState([]);
@@ -46,6 +47,10 @@ export default function Movies() {
   // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     loadMovies();
@@ -321,6 +326,12 @@ export default function Movies() {
     }
   ];
 
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (movie) => {
+    setSelectedItem(movie);
+    setShowDetailView(true);
+  };
+
   
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -592,6 +603,7 @@ export default function Movies() {
               columns={columns}
               data={movies}
               actions={actions}
+              onRowClick={handleRowClick}
             />
             
             {/* Pagination */}
@@ -623,6 +635,50 @@ export default function Movies() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails du film"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'image_url', label: 'Image de couverture', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'genre', label: 'Genres', type: 'badges' },
+              { key: 'release_date', label: 'Date de sortie' },
+              { key: 'duration', label: 'Durée (minutes)' },
+              { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'views_count', label: 'Nombre de vues' },
+              { key: 'likes_count', label: 'Nombre de likes' },
+              { key: 'comments_count', label: 'Nombre de commentaires' },
+              { key: 'is_premium', label: 'Contenu premium', type: 'boolean' },
+              { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
+import DetailView from './ui/DetailView';
 
 export default function Reels() {
   const [items, setItems] = useState([]);
@@ -40,6 +41,10 @@ export default function Reels() {
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const columns = [
     { key: 'title', label: 'Titre', render: (val) => String(val || '') },
@@ -109,6 +114,12 @@ export default function Reels() {
       className: 'text-red-600 hover:text-red-800 font-medium text-sm' 
     }
   ];
+
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
 
   useEffect(() => {
     loadReels();
@@ -505,7 +516,12 @@ export default function Reels() {
           <EmptyState icon="🎬" title="Aucun reel" message="Créez votre premier reel." />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable columns={columns} data={items} actions={actions} />
+            <DataTable 
+              columns={columns} 
+              data={items} 
+              actions={actions} 
+              onRowClick={handleRowClick} 
+            />
             
             {/* Pagination */}
             <Pagination
@@ -536,6 +552,45 @@ export default function Reels() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails du reel"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'likes', label: 'Nombre de likes' },
+              { key: 'shares', label: 'Nombre de partages' },
+              { key: 'views', label: 'Nombre de vues' },
+              { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

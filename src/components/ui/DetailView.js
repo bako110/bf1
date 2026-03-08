@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from './Button';
 
 export default function DetailView({ 
@@ -11,7 +11,17 @@ export default function DetailView({
   actions = [],
   customSections = []
 }) {
+  // État pour gérer les champs expandés (doit être avant tout return)
+  const [expandedFields, setExpandedFields] = useState({});
+
   if (!data) return null;
+
+  const toggleExpand = (fieldKey) => {
+    setExpandedFields(prev => ({
+      ...prev,
+      [fieldKey]: !prev[fieldKey]
+    }));
+  };
 
   const renderField = (field, value) => {
     if (!value && value !== 0) return null;
@@ -111,12 +121,44 @@ export default function DetailView({
         );
 
       case 'textarea':
+        const isExpanded = expandedFields[field.key];
+        const textLength = value?.length || 0;
+        const MAX_LENGTH = 300;
+        const shouldTruncate = textLength > MAX_LENGTH;
+        const displayText = shouldTruncate && !isExpanded 
+          ? value.substring(0, MAX_LENGTH) + '...' 
+          : value;
+
         return (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{field.label}</label>
-            <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-              {value}
-            </p>
+            <div className="space-y-2">
+              <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                {displayText}
+              </p>
+              {shouldTruncate && (
+                <button
+                  onClick={() => toggleExpand(field.key)}
+                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1"
+                >
+                  {isExpanded ? (
+                    <>
+                      <span>Voir moins</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Voir plus</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         );
 
@@ -136,10 +178,42 @@ export default function DetailView({
         );
 
       default:
+        const isDefaultExpanded = expandedFields[field.key];
+        const defaultTextLength = String(value)?.length || 0;
+        const DEFAULT_MAX_LENGTH = 150;
+        const shouldDefaultTruncate = defaultTextLength > DEFAULT_MAX_LENGTH;
+        const displayDefaultText = shouldDefaultTruncate && !isDefaultExpanded 
+          ? String(value).substring(0, DEFAULT_MAX_LENGTH) + '...' 
+          : value;
+
         return (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{field.label}</label>
-            <p className="text-gray-900">{value}</p>
+            <div className="space-y-2">
+              <p className="text-gray-900">{displayDefaultText}</p>
+              {shouldDefaultTruncate && (
+                <button
+                  onClick={() => toggleExpand(field.key)}
+                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1"
+                >
+                  {isDefaultExpanded ? (
+                    <>
+                      <span>Voir moins</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Voir plus</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         );
     }

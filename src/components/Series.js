@@ -12,6 +12,7 @@ import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import ConfirmModal from './ui/ConfirmModal';
 import Pagination from './ui/Pagination';
+import DetailView from './ui/DetailView';
 import SeasonManager from './SeasonManager';
 import EpisodeManager from './EpisodeManager';
 
@@ -275,6 +276,12 @@ export default function Series() {
     setShowEpisodeManager(true);
   };
 
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (seriesData) => {
+    setSelectedItem(seriesData);
+    setShowDetailView(true);
+  };
+
   const columns = [
     {
       key: 'image_url',
@@ -458,6 +465,7 @@ export default function Series() {
             data={series}
             columns={columns}
             actions={actions}
+            onRowClick={handleRowClick}
           />
           
           <Pagination
@@ -745,6 +753,85 @@ export default function Series() {
             loadSeries(); // Recharger pour mettre à jour les stats
           }}
         />
+      )}
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails de la série"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem.id || selectedItem._id);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem.id || selectedItem._id);
+            }}
+            actions={[
+              {
+                label: 'Gérer les saisons',
+                icon: 'layers',
+                variant: 'secondary',
+                onClick: () => {
+                  setShowDetailView(false);
+                  handleManageSeasons(selectedItem);
+                }
+              },
+              {
+                label: 'Gérer les épisodes',
+                icon: 'play-circle',
+                variant: 'secondary',
+                onClick: () => {
+                  setShowDetailView(false);
+                  handleManageEpisodes(selectedItem);
+                }
+              }
+            ]}
+            fields={[
+              { key: 'image_url', label: 'Image de couverture', type: 'image' },
+              { key: 'banner_url', label: 'Bannière', type: 'banner' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'release_year', label: 'Année de sortie' },
+              { key: 'country', label: 'Pays' },
+              { key: 'language', label: 'Langue' },
+              { key: 'network', label: 'Chaîne/Réseau' },
+              { key: 'production_company', label: 'Société de production' },
+              { key: 'total_seasons', label: 'Nombre de saisons' },
+              { key: 'total_episodes', label: 'Nombre d\'épisodes' },
+              { key: 'episode_duration', label: 'Durée moyenne (minutes)' },
+              { key: 'views_count', label: 'Nombre de vues' },
+              { key: 'likes_count', label: 'Nombre de likes' },
+              { key: 'genre', label: 'Genres', type: 'badges' },
+              { key: 'status', label: 'Statut', type: 'status', options: {
+                ongoing: 'En cours',
+                completed: 'Terminée',
+                cancelled: 'Annulée',
+                hiatus: 'En pause'
+              }},
+              { key: 'rating', label: 'Classification' },
+              { key: 'cast', label: 'Acteurs principaux', type: 'badges' },
+              { key: 'crew', label: 'Équipe technique', type: 'badges' },
+              { key: 'is_premium', label: 'Contenu premium', type: 'boolean' },
+              { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
+              { key: 'trailer_url', label: 'Bande-annonce', type: 'url' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
       )}
     </div>
   );

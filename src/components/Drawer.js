@@ -33,8 +33,8 @@ export default function Drawer({
   const sizeClasses = {
     sm: 'w-full md:w-1/3',
     md: 'w-full md:w-1/2',
-    lg: 'w-full md:w-2/3',
-    xl: 'w-full md:w-3/4',
+    lg: 'w-full md:w-1/2',
+    xl: 'w-full md:w-1/2',
     full: 'w-full'
   };
 

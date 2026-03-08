@@ -12,6 +12,7 @@ import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
+import DetailView from './ui/DetailView';
 
 export default function Shows() {
   const [shows, setShows] = useState([]);
@@ -40,6 +41,10 @@ export default function Shows() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     loadShows();
@@ -217,6 +222,12 @@ export default function Shows() {
     }
   ];
 
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
+
   
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -365,6 +376,7 @@ export default function Shows() {
               columns={columns}
               data={shows}
               actions={actions}
+              onRowClick={handleRowClick}
             />
             
             {/* Pagination */}
@@ -396,6 +408,48 @@ export default function Shows() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails de l'émission"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'image_url', label: 'Image', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'host', label: 'Présentateur' },
+              { key: 'category', label: 'Catégorie' },
+              { key: 'duration', label: 'Durée' },
+              { key: 'live_url', label: 'URL Live', type: 'url' },
+              { key: 'replay_url', label: 'URL Replay', type: 'url' },
+              { key: 'is_live', label: 'En direct', type: 'boolean' },
+              { key: 'views_count', label: 'Nombre de vues' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

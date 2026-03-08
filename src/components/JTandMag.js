@@ -14,6 +14,7 @@ import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
+import DetailView from './ui/DetailView';
 import { fetchCategories } from '../services/categoryService';
 
 export default function JTandMag() {
@@ -46,6 +47,10 @@ export default function JTandMag() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [categories, setCategories] = useState([]);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   
   useEffect(() => {
     loadJTandMag();
@@ -284,6 +289,12 @@ export default function JTandMag() {
       className: 'text-red-600 hover:text-red-800 font-medium text-sm' 
     }
   ];
+
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -535,6 +546,7 @@ export default function JTandMag() {
               columns={columns}
               data={items}
               actions={actions}
+              onRowClick={handleRowClick}
             />
             
             {/* Pagination */}
@@ -566,6 +578,48 @@ export default function JTandMag() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails de l'émission"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'image', label: 'Image', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'category', label: 'Catégorie' },
+              { key: 'host', label: 'Présentateur' },
+              { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'rating', label: 'Note' },
+              { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
+              { key: 'views_count', label: 'Nombre de vues' },
+              { key: 'likes_count', label: 'Nombre de likes' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

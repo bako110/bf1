@@ -13,6 +13,7 @@ import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import ConfirmModal from './ui/ConfirmModal';
 import Pagination from './ui/Pagination';
+import DetailView from './ui/DetailView';
 import { fetchCategories } from '../services/categoryService';
 
 export default function Reportages() {
@@ -52,6 +53,10 @@ export default function Reportages() {
   
   // État pour les catégories
   const [categories, setCategories] = useState([]);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     loadReportages();
@@ -366,6 +371,12 @@ export default function Reportages() {
     }
   ];
 
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -612,6 +623,7 @@ export default function Reportages() {
               columns={columns}
               data={items}
               actions={actions}
+              onRowClick={handleRowClick}
             />
             
             {/* Pagination */}
@@ -643,6 +655,48 @@ export default function Reportages() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails du reportage"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'thumbnail', label: 'Vignette', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'category', label: 'Catégorie' },
+              { key: 'duration_minutes', label: 'Durée (minutes)' },
+              { key: 'aired_at', label: 'Date de diffusion' },
+              { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'views', label: 'Nombre de vues' },
+              { key: 'rating', label: 'Note' },
+              { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

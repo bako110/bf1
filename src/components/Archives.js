@@ -15,6 +15,7 @@ import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
 import ConfirmModal from './ui/ConfirmModal';
 import Pagination from './ui/Pagination';
+import DetailView from './ui/DetailView';
 
 export default function Archives() {
   const [items, setItems] = useState([]);
@@ -47,6 +48,10 @@ export default function Archives() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
   const [categories, setCategories] = useState([]);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     loadArchives();
@@ -251,6 +256,12 @@ export default function Archives() {
     { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
     { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
   ];
+
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -488,6 +499,7 @@ export default function Archives() {
               columns={columns}
               data={items}
               actions={actions}
+              onRowClick={handleRowClick}
             />
             
             {/* Pagination */}
@@ -519,6 +531,47 @@ export default function Archives() {
         cancelText="Annuler"
         type="danger"
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails de l'archive"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'thumbnail', label: 'Vignette', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'category', label: 'Catégorie' },
+              { key: 'archived_date', label: 'Date d\'archivage' },
+              { key: 'price', label: 'Prix' },
+              { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'views_count', label: 'Nombre de vues' },
+              { key: 'purchases_count', label: 'Nombre d\'achats' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }

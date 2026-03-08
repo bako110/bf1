@@ -12,6 +12,7 @@ import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
+import DetailView from './ui/DetailView';
 
 export default function Sports() {
   const [sports, setSports] = useState([]);
@@ -27,6 +28,10 @@ export default function Sports() {
   // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
+
+  // États pour la vue détaillée
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   
   const [form, setForm] = useState({
     title: '',
@@ -365,6 +370,12 @@ export default function Sports() {
     }
   ];
 
+  // Gestionnaire pour afficher les détails au clic sur une ligne
+  const handleRowClick = (item) => {
+    setSelectedItem(item);
+    setShowDetailView(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -583,7 +594,12 @@ export default function Sports() {
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable columns={columns} data={sports} actions={actions} />
+            <DataTable 
+              columns={columns} 
+              data={sports} 
+              actions={actions} 
+              onRowClick={handleRowClick} 
+            />
           </div>
         )}
       </div>
@@ -601,6 +617,48 @@ export default function Sports() {
           setItemToDelete(null);
         }}
       />
+
+      {/* Vue détaillée */}
+      {showDetailView && selectedItem && (
+        <Drawer
+          isOpen={showDetailView}
+          onClose={() => {
+            setShowDetailView(false);
+            setSelectedItem(null);
+          }}
+          title="Détails du sport"
+        >
+          <DetailView
+            title={selectedItem.title}
+            data={selectedItem}
+            onClose={() => {
+              setShowDetailView(false);
+              setSelectedItem(null);
+            }}
+            onEdit={() => {
+              setShowDetailView(false);
+              handleEdit(selectedItem);
+            }}
+            onDelete={() => {
+              setShowDetailView(false);
+              handleDelete(selectedItem);
+            }}
+            fields={[
+              { key: 'image', label: 'Image', type: 'image' },
+              { key: 'description', label: 'Description', type: 'textarea' },
+              { key: 'sport_type', label: 'Type de sport' },
+              { key: 'teams', label: 'Équipes', type: 'badges' },
+              { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'is_active', label: 'Actif', type: 'boolean' },
+              { key: 'is_new', label: 'Nouveau', type: 'boolean' },
+              { key: 'views_count', label: 'Nombre de vues' },
+              { key: 'likes_count', label: 'Nombre de likes' },
+              { key: 'created_at', label: 'Date de création', type: 'date' },
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+            ]}
+          />
+        </Drawer>
+      )}
     </div>
   );
 }
