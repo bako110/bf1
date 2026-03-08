@@ -13,6 +13,7 @@ const sections = [
   { label: 'JT et Magazines', key: 'jtandmag' },
   { label: 'Flash info', key: 'breakingNews' },
   { label: 'Films', key: 'movies' },
+  { label: 'Séries TV', key: 'series' },
   { label: 'Reportages', key: 'reportage' },
   { label: 'Reel', key: 'reel' },
   { label: 'Divertissements', key: 'divertissement' },

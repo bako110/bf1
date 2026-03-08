@@ -34,6 +34,7 @@ import Archives from './components/Archives';
 import LiveControlScreen from './screens/LiveControlScreen';
 import Categories from './components/Categories';
 import Sports from './components/Sports';
+import Series from './components/Series';
 import EmissionCategoriesScreen from './screens/EmissionCategoriesScreen';
 
 function App() {
@@ -72,8 +73,9 @@ function App() {
           {section === 'dashboard' && <Dashboard />}
           {section === 'users' && <UsersScreen />}
           {section === 'shows' && <ShowsScreen />}
-          {section === 'breakingNews' && <BreakingNews />}
           {section === 'movies' && <MoviesScreen />}
+          {section === 'series' && <Series />}
+          {section === 'breakingNews' && <BreakingNews />}
           {section === 'messages' && <Messages />}
           {section === 'reportage' && <Reportages />}
           {/* {section === 'popularPrograms' && <PopularPrograms />} */}

@@ -28,16 +28,13 @@ export default function DataTable({ columns = [], data = [], actions = [] }) {
             <tr key={row.id || idx} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
               {columns.map((col) => (
                 <td key={col.key} className="px-6 py-4 text-gray-700">
-                  {col.render ? col.render(row[col.key], row) : row[col.key]}
+                  {col.render ? col.render(row[col.key], row) : (row[col.key] || '-')}
                 </td>
               ))}
               {actions.length > 0 && (
                 <td className="px-6 py-4">
                   <DropdownActions 
-                    items={actions.map(action => ({
-                      ...action,
-                      action: action
-                    }))}
+                    items={actions}
                     onAction={(action) => handleAction(action, row)}
                   />
                 </td>

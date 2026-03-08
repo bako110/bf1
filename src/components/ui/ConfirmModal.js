@@ -1,4 +1,5 @@
 import React from 'react';
+import Button from './Button';
 
 export default function ConfirmModal({ 
   isOpen, 
@@ -16,53 +17,61 @@ export default function ConfirmModal({
     danger: {
       confirmBg: "bg-red-600 hover:bg-red-700",
       confirmText: "text-white",
-      icon: "⚠️"
+      icon: "🗑️",
+      iconBg: "bg-red-100",
+      iconColor: "text-red-600"
     },
     warning: {
       confirmBg: "bg-yellow-600 hover:bg-yellow-700", 
       confirmText: "text-white",
-      icon: "⚠️"
+      icon: "⚠️",
+      iconBg: "bg-yellow-100",
+      iconColor: "text-yellow-600"
     },
     info: {
       confirmBg: "bg-blue-600 hover:bg-blue-700",
       confirmText: "text-white", 
-      icon: "ℹ️"
+      icon: "ℹ️",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600"
     }
   };
 
   const styles = typeStyles[type] || typeStyles.danger;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center">
-            <span className="text-2xl mr-3">{styles.icon}</span>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 border border-gray-100">
+        {/* Header moderne */}
+        <div className="px-8 pt-8 pb-6">
+          <div className="flex items-start space-x-4">
+            <div className={`w-12 h-12 rounded-full ${styles.iconBg} flex items-center justify-center flex-shrink-0`}>
+              <span className="text-2xl">{styles.icon}</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+              <p className="text-gray-600 leading-relaxed">{message}</p>
+            </div>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-4">
-          <p className="text-gray-600">{message}</p>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+        {/* Footer avec boutons modernes */}
+        <div className="px-8 pb-8">
           <div className="flex gap-3 justify-end">
-            <button
+            <Button
+              variant="ghost"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition-colors"
+              className="px-6 py-3"
             >
               {cancelText}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={type === 'danger' ? 'danger' : type === 'warning' ? 'secondary' : 'primary'}
               onClick={onConfirm}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${styles.confirmBg} ${styles.confirmText}`}
+              className="px-6 py-3"
             >
               {confirmText}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Edit2, Trash2, MessageSquare, Heart, Star } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, MessageSquare, Heart, Star, Layers, PlayCircle } from 'lucide-react';
 
 export default function DropdownActions({ items, onAction }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,6 +22,7 @@ export default function DropdownActions({ items, onAction }) {
     switch (iconName) {
       case 'edit':
         return <Edit2 className="w-4 h-4" />;
+      case 'trash-2':
       case 'delete':
         return <Trash2 className="w-4 h-4" />;
       case 'comments':
@@ -30,6 +31,10 @@ export default function DropdownActions({ items, onAction }) {
         return <Heart className="w-4 h-4" />;
       case 'favorite':
         return <Star className="w-4 h-4" />;
+      case 'layers':
+        return <Layers className="w-4 h-4" />;
+      case 'play-circle':
+        return <PlayCircle className="w-4 h-4" />;
       default:
         return null;
     }
@@ -58,7 +63,7 @@ export default function DropdownActions({ items, onAction }) {
             {items.map((item, index) => (
               <button
                 key={index}
-                onClick={() => handleAction(item.action)}
+                onClick={() => handleAction(item)}
                 className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 hover:bg-gray-50 transition-colors ${
                   item.className || 'text-gray-700'
                 }`}
