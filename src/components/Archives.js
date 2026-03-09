@@ -30,7 +30,7 @@ export default function Archives() {
     video_url: '', 
     video_file: null,
     video_source: 'file',
-    price: 0,
+    required_subscription_category: null,
     archived_date: new Date().toISOString().split('T')[0]
   });
   const [editId, setEditId] = useState(null);
@@ -151,7 +151,7 @@ export default function Archives() {
         category: form.category,
         thumbnail: form.thumbnail || null,
         video_url: form.video_url || null,
-        price: parseFloat(form.price) || 0,
+        required_subscription_category: form.required_subscription_category || null,
         archived_date: new Date(form.archived_date).toISOString()
       };
       
@@ -201,7 +201,7 @@ export default function Archives() {
       video_url: item.video_url || '',
       video_file: null,
       video_source: item.video_url ? 'url' : 'file',
-      price: item.price || 0,
+      required_subscription_category: item.required_subscription_category || null,
       archived_date: item.archived_date ? new Date(item.archived_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
     setEditId(item.id || item._id);
@@ -221,7 +221,7 @@ export default function Archives() {
       video_url: '', 
       video_file: null,
       video_source: 'file',
-      price: 0,
+      required_subscription_category: null,
       archived_date: new Date().toISOString().split('T')[0]
     });
     setError('');
@@ -232,14 +232,6 @@ export default function Archives() {
   const columns = [
     { key: 'title', label: 'Titre' },
     { key: 'category', label: 'Catégorie' },
-    { 
-      key: 'price', 
-      label: 'Prix',
-      render: (value, row) => {
-        const price = Number(value) || 0;
-        return `${price.toLocaleString()} FCFA`;
-      }
-    },
     { 
       key: 'views', 
       label: 'Vues',
@@ -439,15 +431,17 @@ export default function Archives() {
               )}
             </div>
 
-            <FormInput
-              label="Prix (FCFA)"
-              type="number"
-              placeholder="1000"
-              value={form.price}
-              onChange={e => setForm({...form, price: e.target.value})}
-              min="0"
-              helperText="Prix pour achat individuel"
-              required
+            <FormSelect
+              label="Catégorie d'abonnement requise"
+              value={form.required_subscription_category || ''}
+              onChange={e => setForm({...form, required_subscription_category: e.target.value || null})}
+              options={[
+                { value: '', label: 'Gratuit (accès public)' },
+                { value: 'basic', label: 'Basic - Abonnement minimum' },
+                { value: 'standard', label: 'Standard - Abonnement intermédiaire' },
+                { value: 'premium', label: 'Premium - Abonnement complet' }
+              ]}
+              helperText="Définir quel niveau d'abonnement est nécessaire pour accéder à ce contenu"
             />
 
             <FormInput
@@ -562,7 +556,6 @@ export default function Archives() {
               { key: 'description', label: 'Description', type: 'textarea' },
               { key: 'category', label: 'Catégorie' },
               { key: 'archived_date', label: 'Date d\'archivage' },
-              { key: 'price', label: 'Prix' },
               { key: 'video_url', label: 'Vidéo', type: 'url' },
               { key: 'views_count', label: 'Nombre de vues' },
               { key: 'purchases_count', label: 'Nombre d\'achats' },

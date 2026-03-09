@@ -7,6 +7,7 @@ import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
+import FormSelect from './ui/FormSelect';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
@@ -33,7 +34,7 @@ export default function Series() {
     image_url: '',
     banner_url: '',
     trailer_url: '',
-    is_premium: false,
+    required_subscription_category: null,
     allow_comments: true,
     cast: [],
     crew: [],
@@ -240,7 +241,7 @@ export default function Series() {
       image_url: '',
       banner_url: '',
       trailer_url: '',
-      is_premium: false,
+      required_subscription_category: null,
       allow_comments: true,
       cast: [],
       crew: [],
@@ -264,14 +265,14 @@ export default function Series() {
 
   // Gestionnaire pour ouvrir le manager des saisons
   const handleManageSeasons = (seriesData) => {
-    console.log('🔵 Gérer les saisons pour:', seriesData);
+    console.log('Gérer les saisons pour:', seriesData);
     setSelectedSeries(seriesData);
     setShowSeasonManager(true);
   };
 
   // Gestionnaire pour ouvrir le manager des épisodes
   const handleManageEpisodes = (seriesData) => {
-    console.log('🟣 Gérer les épisodes pour:', seriesData);
+    console.log('Gérer les épisodes pour:', seriesData);
     setSelectedSeries(seriesData);
     setShowEpisodeManager(true);
   };
@@ -387,19 +388,12 @@ export default function Series() {
       )
     },
     { 
-      key: 'premium_status', 
-      label: 'Type',
-      render: (val, item) => (
-        <div className="space-y-1">
-          <span className={`px-2 py-1 text-xs rounded block text-center ${
-            item.is_premium ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-          }`}>
-            {item.is_premium ? 'Premium' : 'Gratuit'}
-          </span>
-          <div className="text-xs text-gray-500 text-center">
-            {item.views_count || 0} vues
-          </div>
-        </div>
+      key: 'views_count', 
+      label: 'Vues',
+      render: (val) => (
+        <span className="text-sm text-gray-900">
+          {val || 0}
+        </span>
       )
     }
   ];
@@ -678,15 +672,20 @@ export default function Series() {
             <h3 className="text-lg font-semibold text-gray-900">Options</h3>
             
             <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={form.is_premium}
-                  onChange={(e) => setForm({ ...form, is_premium: e.target.checked })}
-                  className="rounded border-gray-300 text-indigo-600"
+              <div>
+                <FormSelect
+                  label="Catégorie d'abonnement requise"
+                  value={form.required_subscription_category || ''}
+                  onChange={e => setForm({...form, required_subscription_category: e.target.value || null})}
+                  options={[
+                    { value: '', label: 'Gratuit (accès public)' },
+                    { value: 'basic', label: 'Basic - Abonnement minimum' },
+                    { value: 'standard', label: 'Standard - Abonnement intermédiaire' },
+                    { value: 'premium', label: 'Premium - Abonnement complet' }
+                  ]}
+                  helperText="Définir quel niveau d'abonnement est nécessaire pour accéder à cette série"
                 />
-                <span className="text-sm font-medium text-gray-700">Contenu premium</span>
-              </label>
+              </div>
               
               <label className="flex items-center space-x-3">
                 <input
@@ -824,7 +823,6 @@ export default function Series() {
               { key: 'rating', label: 'Classification' },
               { key: 'cast', label: 'Acteurs principaux', type: 'badges' },
               { key: 'crew', label: 'Équipe technique', type: 'badges' },
-              { key: 'is_premium', label: 'Contenu premium', type: 'boolean' },
               { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
               { key: 'trailer_url', label: 'Bande-annonce', type: 'url' },
               { key: 'created_at', label: 'Date de création', type: 'date' },

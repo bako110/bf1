@@ -8,6 +8,7 @@ import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
+import FormSelect from './ui/FormSelect';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload'; // Composant ImageUpload
@@ -30,7 +31,7 @@ export default function Movies() {
     video_url: '',
     video_source: 'file',
     image_url: '',
-    is_premium: false,
+    required_subscription_category: null,
     allow_comments: true
   });
   const [editId, setEditId] = useState(null);
@@ -147,7 +148,7 @@ export default function Movies() {
         duration: parseInt(form.duration) || 0,
         video_url: form.video_url || null,
         image_url: form.image_url || null,
-        is_premium: form.is_premium,
+        required_subscription_category: form.required_subscription_category || null,
         allow_comments: form.allow_comments
       };
       
@@ -212,7 +213,7 @@ export default function Movies() {
       video_url: movie.video_url || '',
       video_source: movie.video_url ? 'url' : 'file',
       image_url: movie.image_url || '',
-      is_premium: movie.is_premium || false,
+      required_subscription_category: movie.required_subscription_category || null,
       allow_comments: movie.allow_comments !== false
     });
     setEditId(movie.id);
@@ -233,7 +234,7 @@ export default function Movies() {
       video_url: '',
       video_source: 'file',
       image_url: '',
-      is_premium: false,
+      required_subscription_category: null,
       allow_comments: true
     });
     setError('');
@@ -270,11 +271,6 @@ export default function Movies() {
       key: 'duration', 
       label: 'Durée',
       render: (val) => val ? `${val} min` : '-'
-    },
-    { 
-      key: 'is_premium', 
-      label: 'Type',
-      render: (val) => val ? '📎 Premium' : '🆓 Gratuit'
     },
     { 
       key: 'allow_comments', 
@@ -546,16 +542,18 @@ export default function Movies() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <input 
-                type="checkbox" 
-                id="is_premium"
-                checked={form.is_premium} 
-                onChange={e => setForm({...form, is_premium: e.target.checked})} 
-                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <label htmlFor="is_premium" className="text-sm font-medium text-gray-700">💎 Film Premium (accès payant)</label>
-            </div>
+            <FormSelect
+              label="Catégorie d'abonnement requise"
+              value={form.required_subscription_category || ''}
+              onChange={e => setForm({...form, required_subscription_category: e.target.value || null})}
+              options={[
+                { value: '', label: 'Gratuit (accès public)' },
+                { value: 'basic', label: 'Basic - Abonnement minimum' },
+                { value: 'standard', label: 'Standard - Abonnement intermédiaire' },
+                { value: 'premium', label: 'Premium - Abonnement complet' }
+              ]}
+              helperText="Définir quel niveau d'abonnement est nécessaire pour accéder à ce contenu"
+            />
 
             <div className="flex gap-3 pt-4 border-t border-gray-200">
               <Button 
@@ -671,7 +669,6 @@ export default function Movies() {
               { key: 'views_count', label: 'Nombre de vues' },
               { key: 'likes_count', label: 'Nombre de likes' },
               { key: 'comments_count', label: 'Nombre de commentaires' },
-              { key: 'is_premium', label: 'Contenu premium', type: 'boolean' },
               { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
               { key: 'created_at', label: 'Date de création', type: 'date' },
               { key: 'updated_at', label: 'Dernière modification', type: 'date' }

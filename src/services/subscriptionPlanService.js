@@ -1,6 +1,6 @@
 import api from '../config/api';
 
-export async function fetchSubscriptionPlans(page = 1, limit = 20) {
+export async function fetchSubscriptionPlans(page = 1, limit = 100) {
   const res = await api.get(`/subscription-plans?page=${page}&limit=${limit}`);
   return res.data;
 }
@@ -22,5 +22,10 @@ export async function updateSubscriptionPlan(id, plan) {
 
 export async function deleteSubscriptionPlan(id) {
   const res = await api.delete(`/subscription-plans/${id}`);
+  return res.data;
+}
+
+export async function initializeDefaultPlans() {
+  const res = await api.post('/subscription-plans/initialize-defaults');
   return res.data;
 }
