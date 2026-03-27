@@ -41,13 +41,7 @@ export default function EpisodeManager({ series, onClose }) {
     video_file: null,
     video_url: '',
     video_source: 'file', // file, url
-    is_premium: false,
-    allow_comments: true,
-    director: '',
-    writer: '',
-    guest_stars: '',
-    summary: '',
-    production_code: ''
+    // is_premium et allow_comments ont été supprimés car ils ne sont pas nécessaires
   });
 
   // États pour l'upload vidéo
@@ -74,7 +68,10 @@ export default function EpisodeManager({ series, onClose }) {
   const loadSeasons = async () => {
     try {
       const data = await seriesService.getSeasons(series.id);
-      setSeasons(Array.isArray(data) ? data : data.seasons || []);
+      console.log('DEBUG loadSeasons - données brutes:', data);
+      const seasonsList = Array.isArray(data) ? data : data.seasons || [];
+      console.log('DEBUG loadSeasons - saisons finales:', seasonsList);
+      setSeasons(seasonsList);
     } catch (e) {
       console.error('Erreur chargement saisons:', e);
     }
@@ -91,11 +88,46 @@ export default function EpisodeManager({ series, onClose }) {
         data = await seriesService.getEpisodes(series.id, selectedSeason, page, itemsPerPage);
       }
       
-      setEpisodes(Array.isArray(data) ? data : data.episodes || []);
-      setTotalItems(data.total || (Array.isArray(data) ? data.length : data.episodes?.length || 0));
-      setTotalPages(Math.ceil((data.total || (Array.isArray(data) ? data.length : data.episodes?.length || 0)) / itemsPerPage));
+      console.log('DEBUG loadEpisodes - données brutes complètes:', JSON.stringify(data, null, 2));
+      console.log('DEBUG loadEpisodes - typeof data:', typeof data);
+      console.log('DEBUG loadEpisodes - Array.isArray(data):', Array.isArray(data));
+      console.log('DEBUG loadEpisodes - data.episodes:', data?.episodes);
+      
+      // Extraire les épisodes correctement
+      let episodesList = [];
+      
+      if (Array.isArray(data)) {
+        // Si c'est un tableau directement
+        episodesList = data;
+      } else if (data?.episodes && Array.isArray(data.episodes)) {
+        // Si c'est un objet avec propriété episodes
+        episodesList = data.episodes;
+      } else if (data?.data && Array.isArray(data.data)) {
+        // Si c'est un objet avec propriété data
+        episodesList = data.data;
+      } else {
+        console.warn('⚠️ Format de réponse inattendu:', data);
+        episodesList = [];
+      }
+      
+      // Ajouter season_id si manquant et mapper _id à id
+      episodesList = episodesList.map(episode => ({
+        ...episode,
+        id: episode.id || episode._id, // MongoDB utilise _id
+        season_id: episode.season_id || selectedSeason
+      }));
+      
+      console.log('DEBUG loadEpisodes - épisodes finaux après mapping:', episodesList);
+      console.log('DEBUG loadEpisodes - Nombre d\'épisodes:', episodesList.length);
+      console.log('DEBUG loadEpisodes - État avant setEpisodes');
+      
+      console.log('DEBUG - Appel de setEpisodes avec:', episodesList);
+      setEpisodes(episodesList);
+      setTotalItems(data?.total || episodesList.length);
+      setTotalPages(Math.ceil((data?.total || episodesList.length) / itemsPerPage));
       setCurrentPage(page);
       setError('');
+      console.log('DEBUG - État episodes après setEpisodes (sera affiché après re-render)');
     } catch (e) {
       console.error('Erreur chargement épisodes:', e);
       setError('Erreur lors du chargement des épisodes.');
@@ -103,6 +135,13 @@ export default function EpisodeManager({ series, onClose }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Formate la date pour le champ input type="date"
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    return dateStr.split('T')[0];
   };
 
   const handleVideoUpload = async (file) => {
@@ -149,17 +188,31 @@ export default function EpisodeManager({ series, onClose }) {
     setSuccess('');
 
     try {
+      // Ne garder que les champs acceptés par le backend
       const episodeData = {
-        ...form,
         episode_number: parseInt(form.episode_number),
-        duration: parseInt(form.duration),
-        guest_stars: form.guest_stars.split(',').map(gs => gs.trim()).filter(Boolean)
+        title: form.title,
+        description: form.description || undefined,
+        duration: form.duration ? parseInt(form.duration) : undefined,
+        video_url: form.video_url || undefined,
+        thumbnail_url: form.thumbnail_url || undefined,
+        release_date: form.air_date || undefined,
+        status: form.status || 'upcoming',
+        series_id: series.id,
+        season_id: form.season_id
       };
 
+      // Filtrer les undefined
+      Object.keys(episodeData).forEach(key => 
+        episodeData[key] === undefined && delete episodeData[key]
+      );
+
       if (editingEpisode) {
+        console.log('DEBUG updateEpisode:', { seriesId: series.id, seasonId: form.season_id, episodeId: editingEpisode.id, episodeData });
         await seriesService.updateEpisode(series.id, form.season_id, editingEpisode.id, episodeData);
         setSuccess('Épisode modifié avec succès.');
       } else {
+        console.log('DEBUG createEpisode:', { seriesId: series.id, seasonId: form.season_id, episodeData });
         await seriesService.createEpisode(series.id, form.season_id, episodeData);
         setSuccess('Épisode créé avec succès.');
       }
@@ -199,15 +252,24 @@ export default function EpisodeManager({ series, onClose }) {
   const handleEdit = async (episode) => {
     try {
       const episodeData = await seriesService.getEpisodeById(series.id, episode.season_id, episode.id);
+      console.log('DEBUG handleEdit - episodeData:', episodeData);
       setForm({
-        ...episodeData,
-        guest_stars: Array.isArray(episodeData.guest_stars) 
-          ? episodeData.guest_stars.join(', ') 
-          : episodeData.guest_stars || ''
+        title: episodeData.title || '',
+        description: episodeData.description || '',
+        episode_number: episodeData.episode_number || 1,
+        season_id: episode.season_id || episodeData.season_id || '',
+        duration: episodeData.duration || 0,
+        air_date: formatDate(episodeData.release_date) || '', // release_date du backend
+        thumbnail_url: episodeData.thumbnail_url || '',
+        video_file: null,
+        video_url: episodeData.video_url || '',
+        video_source: episodeData.video_url ? 'url' : 'file',
+        status: episodeData.status || 'upcoming'
       });
       setEditingEpisode(episode);
       setShowForm(true);
     } catch (e) {
+      console.error('Erreur lors du chargement de l\'épisode:', e);
       setError('Erreur lors du chargement de l\'épisode.');
     }
   };
@@ -250,13 +312,7 @@ export default function EpisodeManager({ series, onClose }) {
       video_file: null,
       video_url: '',
       video_source: 'file',
-      is_premium: false,
-      allow_comments: true,
-      director: '',
-      writer: '',
-      guest_stars: '',
-      summary: '',
-      production_code: ''
+      // is_premium et allow_comments ont été supprimés
     });
     setError('');
   };
@@ -272,15 +328,20 @@ export default function EpisodeManager({ series, onClose }) {
     { 
       key: 'episode_info',
       label: 'Épisode',
-      render: (item) => {
+      render: (value, episode) => {
+        // Vérifier que episode existe
+        if (!episode) {
+          return <div>-</div>;
+        }
+        
         // Trouver la saison correspondante pour obtenir le season_number
-        const season = seasons.find(s => s.id === item.series_id || s.id === item.season_id);
+        const season = seasons.find(s => s.id === episode.season_id);
         const seasonNumber = season ? season.season_number : '?';
         
         return (
           <div>
-            <div className="font-semibold">S{seasonNumber}E{item.episode_number || '?'}</div>
-            <div className="text-sm text-gray-600">{item.title}</div>
+            <div className="font-semibold">S{seasonNumber}E{episode.episode_number || '?'}</div>
+            <div className="text-sm text-gray-600">{episode.title}</div>
           </div>
         );
       }
@@ -288,25 +349,14 @@ export default function EpisodeManager({ series, onClose }) {
     { 
       key: 'duration', 
       label: 'Durée',
-      render: (item) => formatDuration(item.duration)
+      render: (value, episode) => episode ? formatDuration(episode.duration) : '-'
     },
     { 
-      key: 'air_date', 
+      key: 'release_date', 
       label: 'Date de diffusion',
-      render: (item) => item.air_date 
-        ? new Date(item.air_date).toLocaleDateString('fr-FR')
+      render: (value, episode) => episode?.release_date 
+        ? new Date(episode.release_date).toLocaleDateString('fr-FR')
         : 'Non définie'
-    },
-    { 
-      key: 'is_premium', 
-      label: 'Premium',
-      render: (item) => (
-        <span className={`px-2 py-1 text-xs rounded ${
-          item.is_premium ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-        }`}>
-          {item.is_premium ? 'Premium' : 'Gratuit'}
-        </span>
-      )
     }
   ];
 
@@ -450,7 +500,7 @@ export default function EpisodeManager({ series, onClose }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Saison *
+                      Saison <span style={{color: 'red'}}>*</span>
                     </label>
                     <select
                       value={form.season_id}
@@ -471,7 +521,7 @@ export default function EpisodeManager({ series, onClose }) {
                   </div>
                   
                   <FormInput
-                    label="Numéro d'épisode"
+                    label={<span>Numéro d'épisode <span style={{color: 'red'}}>*</span></span>}
                     type="number"
                     value={form.episode_number}
                     onChange={(e) => setForm({ ...form, episode_number: e.target.value })}
@@ -481,7 +531,7 @@ export default function EpisodeManager({ series, onClose }) {
                 </div>
 
                 <FormInput
-                  label="Titre de l'épisode"
+                  label={<span>Titre de l'épisode <span style={{color: 'red'}}>*</span></span>}
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -496,19 +546,11 @@ export default function EpisodeManager({ series, onClose }) {
                   rows={2}
                   placeholder="Description courte pour les listings..."
                 />
-
-                <FormTextarea
-                  label="Résumé détaillé"
-                  value={form.summary}
-                  onChange={(e) => setForm({ ...form, summary: e.target.value })}
-                  rows={4}
-                  placeholder="Résumé complet de l'épisode..."
-                />
               </div>
 
-              {/* Détails de production */}
+              {/* Détails techniques */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Détails de production</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Détails techniques</h3>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <FormInput
@@ -525,42 +567,6 @@ export default function EpisodeManager({ series, onClose }) {
                     type="date"
                     value={form.air_date}
                     onChange={(e) => setForm({ ...form, air_date: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Réalisateur"
-                    type="text"
-                    value={form.director}
-                    onChange={(e) => setForm({ ...form, director: e.target.value })}
-                    placeholder="Nom du réalisateur"
-                  />
-                  
-                  <FormInput
-                    label="Scénariste"
-                    type="text"
-                    value={form.writer}
-                    onChange={(e) => setForm({ ...form, writer: e.target.value })}
-                    placeholder="Nom du scénariste"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Invités spéciaux"
-                    type="text"
-                    value={form.guest_stars}
-                    onChange={(e) => setForm({ ...form, guest_stars: e.target.value })}
-                    placeholder="Noms séparés par des virgules"
-                  />
-                  
-                  <FormInput
-                    label="Code de production"
-                    type="text"
-                    value={form.production_code}
-                    onChange={(e) => setForm({ ...form, production_code: e.target.value })}
-                    placeholder="Ex: S01E01"
                   />
                 </div>
               </div>
@@ -644,32 +650,8 @@ export default function EpisodeManager({ series, onClose }) {
                 </div>
               </div>
 
-              {/* Options */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Options</h3>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={form.is_premium}
-                      onChange={(e) => setForm({ ...form, is_premium: e.target.checked })}
-                      className="rounded border-gray-300 text-indigo-600"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Contenu premium</span>
-                  </label>
-                  
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={form.allow_comments}
-                      onChange={(e) => setForm({ ...form, allow_comments: e.target.checked })}
-                      className="rounded border-gray-300 text-indigo-600"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Autoriser les commentaires</span>
-                  </label>
-                </div>
-              </div>
+              {/* Options - Supprimé car non supporté par le backend */}
+              {/* Tous les épisodes d'une série premium sont automatiquement premium */}
 
               {/* Boutons d'action */}
               <div className="flex justify-end space-x-3 pt-6 border-t">

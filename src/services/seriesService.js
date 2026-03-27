@@ -130,7 +130,8 @@ const seriesService = {
   updateSeason: async (seriesId, seasonId, seasonData) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await axios.put(`${API_BASE_URL}/tv/series/${seriesId}/seasons/${seasonId}`, seasonData, {
+      console.log('DEBUG updateSeason:', { endpoint: `/tv/seasons/${seasonId}`, seasonId, seasonData });
+      const response = await axios.patch(`${API_BASE_URL}/tv/seasons/${seasonId}`, seasonData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -147,7 +148,7 @@ const seriesService = {
   deleteSeason: async (seriesId, seasonId) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await axios.delete(`${API_BASE_URL}/tv/series/${seriesId}/seasons/${seasonId}`, {
+      const response = await axios.delete(`${API_BASE_URL}/tv/seasons/${seasonId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

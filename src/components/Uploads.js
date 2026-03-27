@@ -120,7 +120,7 @@ export default function Uploads() {
                     onChange={e => setUploadType(e.target.value)}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm font-medium text-gray-900">🖼️ Image</span>
+                  <span className="text-sm font-medium text-gray-900">Image</span>
                 </label>
                 <label className="flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all" style={{ borderColor: uploadType === 'video' ? '#3b82f6' : '#e5e7eb', backgroundColor: uploadType === 'video' ? '#eff6ff' : '#f9fafb' }}>
                   <input 
@@ -146,7 +146,7 @@ export default function Uploads() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <div>
-                  <p className="text-3xl mb-2">{uploadType === 'image' ? '🖼️' : '🎬'}</p>
+                  <p className="text-3xl mb-2">{uploadType === 'image' ? '' : '🎬'}</p>
                   <p className="text-sm font-semibold text-gray-900">
                     {selectedFile ? selectedFile.name : 'Cliquez pour sélectionner ou glissez-déposez'}
                   </p>

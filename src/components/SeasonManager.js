@@ -114,12 +114,19 @@ export default function SeasonManager({ series, onClose }) {
     }
   };
 
+  // Formate la date pour le champ input type="date"
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    return dateStr.split('T')[0];
+  };
+
   const handleEdit = (season) => {
     setForm({
       title: season.title || '',
       description: season.description || '',
       season_number: season.season_number || 1,
-      release_date: season.release_date || '',
+      release_date: formatDate(season.release_date) || '',
       poster_url: season.poster_url || '',
       trailer_url: season.trailer_url || '',
       episode_count: season.episode_count || 0,

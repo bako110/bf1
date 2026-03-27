@@ -99,7 +99,7 @@ export default function FileUpload({
   }
 
   function getFileIcon(fileType) {
-    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType.startsWith('image/')) return '';
     if (fileType.startsWith('video/')) return '🎬';
     if (fileType.startsWith('audio/')) return '🎵';
     if (fileType.includes('pdf')) return '📄';

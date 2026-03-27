@@ -34,29 +34,37 @@ export default function DataTable({ columns = [], data = [], actions = [], onRow
           </tr>
         </thead>
         <tbody>
-          {data.map((row, idx) => (
-            <tr 
-              key={row.id || idx} 
-              onClick={(e) => handleRowClick(row, e)}
-              className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-                onRowClick ? 'cursor-pointer' : ''
-              }`}
-            >
-              {columns.map((col) => (
-                <td key={col.key} className="px-6 py-4 text-gray-700">
-                  {col.render ? col.render(row[col.key], row) : (row[col.key] || '-')}
-                </td>
-              ))}
-              {actions.length > 0 && (
-                <td className="px-6 py-4">
-                  <DropdownActions 
-                    items={actions}
-                    onAction={(action) => handleAction(action, row)}
-                  />
-                </td>
-              )}
+          {data && data.length > 0 ? (
+            data.map((row, idx) => (
+              <tr 
+                key={row.id || row._id || idx} 
+                onClick={(e) => handleRowClick(row, e)}
+                className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
+                  onRowClick ? 'cursor-pointer' : ''
+                }`}
+              >
+                {columns.map((col) => (
+                  <td key={col.key} className="px-6 py-4 text-gray-700">
+                    {col.render ? col.render(row[col.key], row) : (row[col.key] || '-')}
+                  </td>
+                ))}
+                {actions.length > 0 && (
+                  <td className="px-6 py-4">
+                    <DropdownActions 
+                      items={actions}
+                      onAction={(action) => handleAction(action, row)}
+                    />
+                  </td>
+                )}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={columns.length + (actions.length > 0 ? 1 : 0)} className="px-6 py-4 text-center text-gray-500">
+                Aucune donnée
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

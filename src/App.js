@@ -36,6 +36,7 @@ import Categories from './components/Categories';
 import Sports from './components/Sports';
 import Series from './components/Series';
 import EmissionCategoriesScreen from './screens/EmissionCategoriesScreen';
+import Carousel from './components/Carousel';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -96,6 +97,7 @@ function App() {
           {section === 'liveControl' && <LiveControlScreen />}
           {section === 'sports' && <Sports />}
           {section === 'emissionCategories' && <EmissionCategoriesScreen />}
+          {section === 'carousel' && <Carousel />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}

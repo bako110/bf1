@@ -6,6 +6,7 @@ const sections = [
   { label: 'Utilisateurs', key: 'users' },
   { label: 'Contenu', key: 'submenu_content', isHeader: true },
   { label: 'Contrôle Live', key: 'liveControl' },
+  { label: 'Carousel Accueil', key: 'carousel' },
   { label: 'Calendrier', key: 'programs' },
   { label: 'Catégories', key: 'categories' },
   { label: 'Catégories d\'Émissions', key: 'emissionCategories' },
