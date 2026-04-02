@@ -196,7 +196,8 @@ export default function Reportages() {
         thumbnail: form.thumbnail || null,
         duration_minutes: parseInt(form.duration_minutes) || 1,
         aired_at: form.aired_at ? new Date(form.aired_at).toISOString() : new Date().toISOString(),
-        host: null
+        host: null,
+        allow_comments: form.allow_comments === false ? false : true
       };
       
       console.log('📤 Données envoyées au backend:', replayData);
