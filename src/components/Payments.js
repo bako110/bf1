@@ -136,7 +136,7 @@ export default function Payments() {
     { 
       key: 'is_active', 
       label: 'Statut',
-      render: (val) => val ? '✅ Actif' : '❌ Inactif'
+      render: (val) => val ? ' Actif' : ' Inactif'
     },
     { 
       key: 'min_amount', 
@@ -181,11 +181,11 @@ export default function Payments() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier la Méthode' : '➕ Nouvelle Méthode'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? ' Modifier la Méthode' : ' Nouvelle Méthode'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
               <p className="text-sm text-green-800">
-                <strong>💡 Astuce :</strong> Configurez les méthodes de paiement acceptées par votre plateforme.
+                <strong> Astuce :</strong> Configurez les méthodes de paiement acceptées par votre plateforme.
               </p>
             </div>
 
@@ -280,7 +280,7 @@ export default function Payments() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -290,7 +290,7 @@ export default function Payments() {
                 onClick={handleClose}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -300,7 +300,7 @@ export default function Payments() {
           <Loader size="lg" text="Chargement des méthodes de paiement..." />
         ) : methods.length === 0 ? (
           <EmptyState 
-            icon="💳"
+            icon=""
             title="Aucune méthode de paiement"
             message="Créez votre première méthode de paiement pour la voir apparaître ici."
           />

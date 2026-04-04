@@ -65,7 +65,7 @@ export default function Reportages() {
 
   async function loadCategories() {
     try {
-      const data = await fetchCategories();
+      const data = await fetchCategories('reportage', false);
       setCategories(data || []);
     } catch (e) {
       console.error('Erreur chargement catégories:', e);
@@ -200,7 +200,7 @@ export default function Reportages() {
         allow_comments: form.allow_comments === false ? false : true
       };
       
-      console.log('📤 Données envoyées au backend:', replayData);
+      console.log(' Données envoyées au backend:', replayData);
       
       if (editId) {
         await updateReportage(editId, replayData);
@@ -419,11 +419,11 @@ export default function Reportages() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Reportage' : '➕ Nouveau Reportage'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier le Reportage' : ' Nouveau Reportage'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un reportage complet.
+                <strong> Astuce :</strong> Remplissez tous les champs pour créer un reportage complet.
               </p>
             </div>
 
@@ -457,7 +457,7 @@ export default function Reportages() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -468,7 +468,7 @@ export default function Reportages() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> URL</span>
                 </label>
               </div>
 
@@ -515,7 +515,7 @@ export default function Reportages() {
                   )}
                   {form.video_url && !uploading && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      <p className="text-sm text-green-800"> Vidéo uploadée</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
@@ -569,7 +569,7 @@ export default function Reportages() {
                   className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
-                  🚫 Désactiver les commentaires
+                   Désactiver les commentaires
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
@@ -594,7 +594,7 @@ export default function Reportages() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -604,7 +604,7 @@ export default function Reportages() {
                 onClick={handleCloseDrawer}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -614,7 +614,7 @@ export default function Reportages() {
           <Loader size="lg" text="Chargement des reportages..." />
         ) : items.length === 0 ? (
           <EmptyState 
-            icon="🎬"
+            icon=""
             title="Aucun reportage"
             message="Créez votre premier reportage pour le voir apparaître ici."
           />

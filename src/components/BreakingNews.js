@@ -45,7 +45,7 @@ export default function BreakingNews() {
 
   async function loadCategories() {
     try {
-      const data = await fetchCategories();
+      const data = await fetchCategories('flash_infos', false);
       setCategories(data || []);
     } catch (e) {
       console.error('Erreur chargement catégories:', e);
@@ -339,7 +339,7 @@ export default function BreakingNews() {
                   className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
-                  🚫 Désactiver les commentaires
+                   Désactiver les commentaires
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
@@ -364,7 +364,7 @@ export default function BreakingNews() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -374,7 +374,7 @@ export default function BreakingNews() {
                 onClick={handleClose}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -384,7 +384,7 @@ export default function BreakingNews() {
           <Loader size="lg" text="Chargement des actualités urgentes..." />
         ) : items.length === 0 ? (
           <EmptyState 
-            icon="📰"
+            icon=""
             title="Aucune actualité urgente"
             message="Créez votre première actualité urgente pour la voir apparaître ici."
           />

@@ -51,17 +51,17 @@ export default function Reels() {
     { 
       key: 'likes', 
       label: 'Likes',
-      render: (val) => `❤️ ${val || 0}`
+      render: (val) => ` ${val || 0}`
     },
     { 
       key: 'comments', 
       label: 'Commentaires',
-      render: (val) => `💬 ${val || 0}`
+      render: (val) => ` ${val || 0}`
     },
     { 
       key: 'shares', 
       label: 'Partages',
-      render: (val) => `🔁 ${val || 0}`
+      render: (val) => ` ${val || 0}`
     },
     { 
       key: 'created_at', 
@@ -329,11 +329,11 @@ export default function Reels() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier le Reel' : '➕ Nouveau Reel'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? ' Modifier le Reel' : ' Nouveau Reel'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-pink-50 border-l-4 border-pink-500 p-4 mb-6">
               <p className="text-sm text-pink-800">
-                <strong>💡 Astuce :</strong> Créez des reels courts et engageants pour votre audience.
+                <strong> Astuce :</strong> Créez des reels courts et engageants pour votre audience.
               </p>
             </div>
 
@@ -361,7 +361,7 @@ export default function Reels() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier local</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier local</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -372,7 +372,7 @@ export default function Reels() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 Lien URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> Lien URL</span>
                 </label>
               </div>
 
@@ -419,7 +419,7 @@ export default function Reels() {
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      <p className="text-sm text-green-800"> Vidéo uploadée</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
@@ -440,11 +440,11 @@ export default function Reels() {
                     required
                   />
                   <p className="text-xs text-gray-500">
-                    💡 Formats supportés : YouTube, liens directs MP4, flux HLS (.m3u8)
+                     Formats supportés : YouTube, liens directs MP4, flux HLS (.m3u8)
                   </p>
                   {form.video_url && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ URL vidéo définie</p>
+                      <p className="text-sm text-green-800"> URL vidéo définie</p>
                     </div>
                   )}
                 </div>
@@ -469,7 +469,7 @@ export default function Reels() {
                   className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
-                  🚫 Désactiver les commentaires
+                   Désactiver les commentaires
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
@@ -494,7 +494,7 @@ export default function Reels() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -504,7 +504,7 @@ export default function Reels() {
                 onClick={handleClose}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -513,7 +513,7 @@ export default function Reels() {
         {loading ? (
           <Loader size="lg" text="Chargement des reels..." />
         ) : items.length === 0 ? (
-          <EmptyState icon="🎬" title="Aucun reel" message="Créez votre premier reel." />
+          <EmptyState icon="" title="Aucun reel" message="Créez votre premier reel." />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <DataTable 

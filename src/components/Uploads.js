@@ -130,7 +130,7 @@ export default function Uploads() {
                     onChange={e => setUploadType(e.target.value)}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm font-medium text-gray-900">🎬 Vidéo</span>
+                  <span className="text-sm font-medium text-gray-900"> Vidéo</span>
                 </label>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function Uploads() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <div>
-                  <p className="text-3xl mb-2">{uploadType === 'image' ? '' : '🎬'}</p>
+                  <p className="text-3xl mb-2">{uploadType === 'image' ? '' : ''}</p>
                   <p className="text-sm font-semibold text-gray-900">
                     {selectedFile ? selectedFile.name : 'Cliquez pour sélectionner ou glissez-déposez'}
                   </p>
@@ -181,7 +181,7 @@ export default function Uploads() {
           <Loader size="lg" text="Chargement de l'historique des uploads..." />
         ) : uploads.length === 0 ? (
           <EmptyState 
-            icon="📁"
+            icon=""
             title="Aucun fichier uploadé"
             message="Commencez par uploader votre premier fichier."
           />

@@ -162,7 +162,7 @@ export default function EmissionCategories() {
         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
           val ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
         }`}>
-          {val ? '✓ Active' : '✗ Inactive'}
+          {val ? ' Active' : ' Inactive'}
         </span>
       )
     },
@@ -202,11 +202,11 @@ export default function EmissionCategories() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier la Catégorie' : '➕ Nouvelle Catégorie'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier la Catégorie' : ' Nouvelle Catégorie'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong>💡 Info :</strong> Ces catégories seront affichées comme grandes cartes dans l'écran Émissions de l'application mobile.
+                <strong> Info :</strong> Ces catégories seront affichées comme grandes cartes dans l'écran Émissions de l'application mobile.
               </p>
             </div>
 
@@ -220,7 +220,7 @@ export default function EmissionCategories() {
 
             {/* Image Principale */}
             <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-              <h4 className="text-sm font-semibold text-blue-900 mb-3">📸 Image Principale (Obligatoire)</h4>
+              <h4 className="text-sm font-semibold text-blue-900 mb-3"> Image Principale (Obligatoire)</h4>
               <ImageUpload
                 label="Image de la carte catégorie"
                 value={form.image_main}
@@ -233,7 +233,7 @@ export default function EmissionCategories() {
 
             {/* Image de Fond */}
             <div className="p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
-              <h4 className="text-sm font-semibold text-purple-900 mb-3">🎨 Image de Fond (Optionnel)</h4>
+              <h4 className="text-sm font-semibold text-purple-900 mb-3"> Image de Fond (Optionnel)</h4>
               <ImageUpload
                 label="Image d'arrière-plan"
                 value={form.image_background}
@@ -245,7 +245,7 @@ export default function EmissionCategories() {
 
             {/* Icône */}
             <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded">
-              <h4 className="text-sm font-semibold text-green-900 mb-3">🔖 Icône (Optionnel)</h4>
+              <h4 className="text-sm font-semibold text-green-900 mb-3"> Icône (Optionnel)</h4>
               <ImageUpload
                 label="Petite icône de la catégorie"
                 value={form.image_icon}
@@ -274,7 +274,7 @@ export default function EmissionCategories() {
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
               <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                ✓ Catégorie Active (visible dans l'application)
+                 Catégorie Active (visible dans l'application)
               </label>
             </div>
 
@@ -294,7 +294,7 @@ export default function EmissionCategories() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -304,7 +304,7 @@ export default function EmissionCategories() {
                 onClick={handleCloseDrawer}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -314,7 +314,7 @@ export default function EmissionCategories() {
           <Loader size="lg" text="Chargement des catégories..." />
         ) : categories.length === 0 ? (
           <EmptyState 
-            icon="📁"
+            icon=""
             title="Aucune catégorie"
             message="Créez votre première catégorie d'émissions pour la voir apparaître ici."
           />

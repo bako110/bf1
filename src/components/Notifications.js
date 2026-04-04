@@ -168,9 +168,9 @@ export default function Notifications() {
       label: 'Programme',
       render: (val) => {
         const types = {
-          'journal_13h30': '📰 Journal 13H30',
-          'journal_20h': '📺 Journal 20H',
-          'all_programs': '📱 Tous les programmes'
+          'journal_13h30': ' Journal 13H30',
+          'journal_20h': ' Journal 20H',
+          'all_programs': ' Tous les programmes'
         };
         return types[val] || val;
       }
@@ -185,9 +185,9 @@ export default function Notifications() {
       label: 'Audience',
       render: (val) => {
         const audiences = {
-          'all': '🌍 Tous',
-          'premium': '💎 Premium',
-          'free': '🆓 Gratuit'
+          'all': ' Tous',
+          'premium': ' Premium',
+          'free': ' Gratuit'
         };
         return audiences[val] || val;
       }
@@ -195,7 +195,7 @@ export default function Notifications() {
     { 
       key: 'is_active', 
       label: 'Statut',
-      render: (val) => val ? '✅ Active' : '❌ Inactive'
+      render: (val) => val ? ' Active' : ' Inactive'
     },
     { 
       key: 'created_at', 
@@ -218,7 +218,7 @@ export default function Notifications() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="📱 Notifications Push Mobile"
+          title=" Notifications Push Mobile"
           description="Gérer les notifications push pour les journaux et programmes mobiles"
           action={
             <Button 
@@ -255,17 +255,17 @@ export default function Notifications() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier la Notification' : '📱 Nouvelle Notification Push'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier la Notification' : ' Nouvelle Notification Push'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong>📱 Astuce :</strong> Configurez les notifications push pour les journaux de 13H30 et 20H, ou pour tous les programmes mobiles.
+                <strong> Astuce :</strong> Configurez les notifications push pour les journaux de 13H30 et 20H, ou pour tous les programmes mobiles.
               </p>
             </div>
 
             <FormInput
               label="Titre de la Notification"
-              placeholder="📰 Journal 13H30 disponible !"
+              placeholder=" Journal 13H30 disponible !"
               value={form.title}
               onChange={e => setForm({...form, title: e.target.value})}
               required
@@ -290,9 +290,9 @@ export default function Notifications() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                 required
               >
-                <option value="journal_13h30">📰 Journal 13H30</option>
-                <option value="journal_20h">📺 Journal 20H</option>
-                <option value="all_programs">📱 Tous les programmes</option>
+                <option value="journal_13h30"> Journal 13H30</option>
+                <option value="journal_20h"> Journal 20H</option>
+                <option value="all_programs"> Tous les programmes</option>
               </select>
             </div>
 
@@ -315,9 +315,9 @@ export default function Notifications() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                   required
                 >
-                  <option value="all">🌍 Tous les utilisateurs</option>
-                  <option value="premium">💎 Utilisateurs Premium</option>
-                  <option value="free">🆓 Utilisateurs Gratuits</option>
+                  <option value="all"> Tous les utilisateurs</option>
+                  <option value="premium"> Utilisateurs Premium</option>
+                  <option value="free"> Utilisateurs Gratuits</option>
                 </select>
               </div>
             </div>
@@ -349,7 +349,7 @@ export default function Notifications() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '📱 Créer la Notification'
+                  editId ? ' Mettre à jour' : ' Créer la Notification'
                 )}
               </Button>
               <Button 
@@ -359,7 +359,7 @@ export default function Notifications() {
                 onClick={handleCloseDrawer}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -369,7 +369,7 @@ export default function Notifications() {
           <Loader size="lg" text="Chargement des notifications push..." />
         ) : items.length === 0 ? (
           <EmptyState 
-            icon="📱"
+            icon=""
             title="Aucune notification push"
             message="Créez votre première notification push pour les journaux mobiles."
           />

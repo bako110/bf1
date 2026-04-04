@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { fetchDivertissements, createDivertissement, updateDivertissement, deleteDivertissement } from '../services/divertissementService';
-import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
+import { useEffect, useState } from 'react';
+import { fetchTeleRealite, createTeleRealite, updateTeleRealite, deleteTeleRealite } from '../services/teleRealiteService';
+import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -10,63 +10,66 @@ import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
 import FormSelect from './ui/FormSelect';
+import ImageUpload from './ui/ImageUpload';
 import EmptyState from './ui/EmptyState';
-import ImageUpload from './ui/ImageUpload'; // Composant ImageUpload
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
 import DetailView from './ui/DetailView';
-import { fetchCategories } from '../services/categoryService';
 
-export default function Divertissements() {
+export default function TeleRealite() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ 
-    title: '', 
-    category: '', 
-    description: '', 
-    image: '', 
-    video_url: '', 
-    video_file: null, 
-    video_source: 'file', 
-    allow_comments: true 
+  const [form, setForm] = useState({
+    title: '',
+    category: '',
+    sub_type: 'tele_realite',
+    description: '',
+    image: '',
+    video_file: null,
+    video_url: '',
+    video_source: 'file',
+    host: '',
+    allow_comments: true,
+    is_live: false,
+    is_upcoming: false,
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
-  
-  // États pour l'upload vidéo
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+
   const [categories, setCategories] = useState([]);
 
-  // États pour la vue détaillée
   const [showDetailView, setShowDetailView] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
-    loadDivertissements();
+    loadItems();
     loadCategories();
   }, []);
 
   async function loadCategories() {
     try {
-      const data = await fetchCategories('divertissement', false);
+      const data = await fetchCategories('tele_realite', false);
       setCategories(data || []);
     } catch (e) {
-      console.error('Erreur chargement catégories:', e);
+      console.error('Erreur chargement categories:', e);
     }
   }
 
-  async function loadDivertissements(page = 1, append = false) {
+  async function loadItems(page = 1, append = false) {
     if (!append) {
       setLoading(true);
     } else {
@@ -74,55 +77,78 @@ export default function Divertissements() {
     }
     setError('');
     try {
-      const data = await fetchDivertissements(page, itemsPerPage);
+      const data = await fetchTeleRealite(page, itemsPerPage);
       if (append) {
-        setItems(prev => [...prev, ...data.items]);
+        setItems(prev => [...prev, ...(data.items || data)]);
       } else {
         setItems(data.items || data);
       }
-      setTotalItems(data.total || data.length);
-      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setTotalItems(data.total || (data.items || data).length);
+      setTotalPages(data.totalPages || Math.ceil((data.total || (data.items || data).length) / itemsPerPage));
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des divertissements.');
+      setError('Erreur lors du chargement.');
     }
     setLoading(false);
     setPaginationLoading(false);
   }
 
-  // Handlers de pagination
   const handlePageChange = (page) => {
-    loadDivertissements(page);
+    loadItems(page);
   };
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
-      loadDivertissements(currentPage + 1, true);
+      loadItems(currentPage + 1, true);
     }
   };
 
-  // Upload automatique vidéo avec uploadsService
-  async function handleVideoSelect(file) {
+  async function handleFileSelect(file) {
     if (!file) return;
-    setForm({...form, video_file: file});
-    setUploadingVideo(true);
-    setUploadVideoProgress(0);
-    
+    setForm({ ...form, video_file: file });
+    setUploadError('');
+    setUploading(true);
+    setUploadProgress(0);
+
     try {
-      // Utilisation du service d'upload vidéo avec callback de progression
-      const response = await uploadVideo(file, (progress) => {
-        setUploadVideoProgress(progress);
+      const token = localStorage.getItem('admin_token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        }
       });
-      
-      // Récupération de l'URL depuis la réponse
-      const videoUrl = response.data?.url || response.data?.secure_url || response.url;
-      setForm(prev => ({...prev, video_url: videoUrl}));
-      
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const videoUrl = response.data?.url || response.data?.secure_url || response.url;
+          setForm(prev => ({ ...prev, video_url: videoUrl }));
+          setUploadProgress(100);
+        } else {
+          const errorData = JSON.parse(xhr.responseText);
+          throw new Error(errorData.detail || 'Erreur upload');
+        }
+        setUploading(false);
+      });
+
+      xhr.addEventListener('error', () => {
+        setUploadError("Erreur lors de l'upload");
+        setForm(prev => ({ ...prev, video_file: null }));
+        setUploading(false);
+      });
+
+      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
-    } finally {
-      setUploadingVideo(false);
-      setUploadVideoProgress(0);
+      setUploadError("Erreur lors de l'upload: " + err.message);
+      setForm(prev => ({ ...prev, video_file: null }));
+      setUploading(false);
     }
   }
 
@@ -130,61 +156,47 @@ export default function Divertissements() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    
-    if (uploadingVideo) {
-      setError('Veuillez attendre la fin de l\'upload de la vidéo');
+
+    if (uploading) {
+      setError("Veuillez attendre la fin de l'upload de la vidéo");
       return;
     }
-    
+
     if (!form.video_url && !editId) {
       setError('Veuillez sélectionner une vidéo');
       return;
     }
-    
+
     setSubmitting(true);
-    
+
     try {
       const payload = {
         title: form.title,
         category: form.category,
+        sub_type: form.sub_type,
         description: form.description,
         image: form.image || null,
         video_url: form.video_url || null,
-        allow_comments: form.allow_comments
+        host: form.host || null,
+        allow_comments: form.allow_comments,
+        is_live: form.is_live,
+        is_upcoming: form.is_upcoming,
       };
-      
+
       if (editId) {
-        await updateDivertissement(editId, payload);
-        setSuccess('Divertissement modifié avec succès.');
+        await updateTeleRealite(editId, payload);
+        setSuccess('Élément modifié avec succès.');
       } else {
-        await createDivertissement(payload);
-        setSuccess('Divertissement créé avec succès.');
+        await createTeleRealite(payload);
+        setSuccess('Élément créé avec succès.');
       }
-      handleClose();
-      loadDivertissements();
+      handleCloseDrawer();
+      loadItems();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function handleClose() {
-    setIsDrawerOpen(false);
-    setEditId(null);
-    setForm({ 
-      title: '', 
-      category: '', 
-      description: '', 
-      image: '', 
-      video_url: '', 
-      video_file: null, 
-      video_source: 'file', 
-      allow_comments: true 
-    });
-    setError('');
-    setUploadingVideo(false);
-    setUploadVideoProgress(0);
   }
 
   function handleDelete(item) {
@@ -195,12 +207,10 @@ export default function Divertissements() {
   async function confirmDelete() {
     if (!itemToDelete) return;
     const id = itemToDelete.id || itemToDelete._id;
-    setError('');
-    setSuccess('');
     try {
-      await deleteDivertissement(id);
-      setSuccess('Divertissement supprimé.');
-      loadDivertissements();
+      await deleteTeleRealite(id);
+      setSuccess('Élément supprimé.');
+      loadItems();
     } catch (e) {
       setError('Erreur lors de la suppression.');
     } finally {
@@ -212,60 +222,96 @@ export default function Divertissements() {
   async function handleToggleComments(item) {
     const itemId = item.id || item._id;
     const newStatus = !item.allow_comments;
-    
     try {
-      await updateDivertissement(itemId, { allow_comments: newStatus });
+      await updateTeleRealite(itemId, { allow_comments: newStatus });
       setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
-      loadDivertissements();
+      loadItems();
     } catch (e) {
       setError('Erreur lors de la modification des commentaires.');
     }
   }
 
   function handleEdit(item) {
-    setForm({ 
-      title: item.title || '', 
+    setForm({
+      title: item.title || '',
       category: item.category || '',
+      sub_type: item.sub_type || 'tele_realite',
       description: item.description || '',
       image: item.image || '',
-      video_url: item.video_url || '',
       video_file: null,
+      video_url: item.video_url || '',
       video_source: item.video_url ? 'url' : 'file',
-      allow_comments: item.allow_comments !== false
+      host: item.host || '',
+      allow_comments: item.allow_comments !== false,
+      is_live: item.is_live || false,
+      is_upcoming: item.is_upcoming || false,
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
+    setError('');
+    setSuccess('');
+  }
+
+  function handleCloseDrawer() {
+    setIsDrawerOpen(false);
+    setEditId(null);
+    setForm({
+      title: '',
+      category: '',
+      sub_type: 'tele_realite',
+      description: '',
+      image: '',
+      video_file: null,
+      video_url: '',
+      video_source: 'file',
+      host: '',
+      allow_comments: true,
+      is_live: false,
+      is_upcoming: false,
+    });
+    setError('');
+    setUploading(false);
+    setUploadProgress(0);
+    setUploadError('');
   }
 
   const columns = [
-    { 
-      key: 'title', 
+    {
+      key: 'title',
       label: 'Titre',
       render: (val) => (
         <div className="max-w-xs">
-          <p className="font-medium text-gray-900 line-clamp-2" 
-             style={{
-               display: '-webkit-box',
-               WebkitLineClamp: 2,
-               WebkitBoxOrient: 'vertical',
-               overflow: 'hidden',
-               textOverflow: 'ellipsis',
-               lineHeight: '1.4'
-             }}>
+          <p className="font-medium text-gray-900" style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            lineHeight: '1.4'
+          }}>
             {val || '-'}
           </p>
         </div>
       )
     },
-    { key: 'category', label: 'Catégorie' },
-    { 
-      key: 'allow_comments', 
+    { key: 'category', label: 'Catégorie', render: (val) => String(val || '') },
+    {
+      key: 'sub_type',
+      label: 'Type',
+      render: (val) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          val === 'event' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+        }`}>
+          {val === 'event' ? 'Événement' : 'Télé Réalité'}
+        </span>
+      )
+    },
+    {
+      key: 'allow_comments',
       label: 'Commentaires',
       render: (value) => (
         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          value === false 
-            ? 'bg-red-100 text-red-800' 
-            : 'bg-green-100 text-green-800'
+          value === false ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
         }`}>
           {value === false ? (
             <>
@@ -288,27 +334,11 @@ export default function Divertissements() {
   ];
 
   const actions = [
-    { 
-      label: 'Modifier', 
-      onClick: handleEdit, 
-      className: 'text-blue-600 hover:text-blue-800',
-      icon: 'edit'
-    },
-    { 
-      label: 'Basculer commentaires', 
-      onClick: (item) => handleToggleComments(item), 
-      className: 'text-orange-600 hover:text-orange-800',
-      icon: 'comments'
-    },
-    { 
-      label: 'Supprimer', 
-      onClick: handleDelete, 
-      className: 'text-red-600 hover:text-red-800',
-      icon: 'delete'
-    }
+    { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800', icon: 'edit' },
+    { label: 'Basculer commentaires', onClick: handleToggleComments, className: 'text-orange-600 hover:text-orange-800', icon: 'comments' },
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800', icon: 'delete' },
   ];
 
-  // Gestionnaire pour afficher les détails au clic sur une ligne
   const handleRowClick = (item) => {
     setSelectedItem(item);
     setShowDetailView(true);
@@ -317,15 +347,12 @@ export default function Divertissements() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <PageHeader 
-          title="Gestion des Divertissements"
-          description="Créer et gérer les divertissements"
+        <PageHeader
+          title="Télé Réalité et Événements"
+          description="Créer et gérer les émissions de télé réalité et événements"
           action={
-            <Button 
-              onClick={() => setIsDrawerOpen(true)}
-              variant="primary"
-            >
-              + Nouveau Divertissement
+            <Button onClick={() => setIsDrawerOpen(true)} variant="primary">
+              + Nouveau
             </Button>
           }
         />
@@ -333,7 +360,6 @@ export default function Divertissements() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        {/* Bouton charger plus */}
         {items.length > 0 && currentPage < totalPages && (
           <div className="flex justify-center mb-6">
             <button
@@ -347,71 +373,73 @@ export default function Divertissements() {
                   Chargement...
                 </>
               ) : (
-                <>
-                  Charger plus de divertissements ({items.length}/{totalItems})
-                </>
+                <>Charger plus ({items.length}/{totalItems})</>
               )}
             </button>
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Divertissement' : 'Nouveau Divertissement'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? 'Modifier' : 'Nouveau'}>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <FormInput 
-              label="Titre du divertissement" 
-              placeholder="Titre du divertissement" 
-              value={form.title} 
-              onChange={e => setForm({...form, title: e.target.value})} 
-              required 
+
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>Astuce :</strong> Remplissez tous les champs pour créer un contenu complet.
+              </p>
+            </div>
+
+            <FormInput
+              label="Titre"
+              placeholder="Titre de l'émission ou événement"
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              required
             />
-            
+
             <FormSelect
               label="Catégorie"
               value={form.category}
-              onChange={e => setForm({...form, category: e.target.value})}
+              onChange={e => setForm({ ...form, category: e.target.value })}
               options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
               required
               helperText="Sélectionnez une catégorie existante ou créez-en une dans la section Catégories"
             />
-            
-            <FormTextarea 
-              label="Description" 
-              placeholder="Description ou contenu..." 
-              value={form.description} 
-              onChange={e => setForm({...form, description: e.target.value})} 
-              rows={4} 
-              required 
+
+            <FormInput
+              label="Animateur / Présentateur (optionnel)"
+              placeholder="Nom de l'animateur"
+              value={form.host}
+              onChange={e => setForm({ ...form, host: e.target.value })}
             />
-            
-            {/* Sélecteur de source vidéo */}
+
+            {/* Source vidéo */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
               <div className="flex gap-4">
                 <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="radio" 
+                  <input
+                    type="radio"
                     name="video_source"
                     value="file"
                     checked={form.video_source === 'file'}
-                    onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
+                    onChange={() => setForm({ ...form, video_source: 'file', video_url: '' })}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="radio" 
+                  <input
+                    type="radio"
                     name="video_source"
                     value="url"
                     checked={form.video_source === 'url'}
-                    onChange={e => setForm({...form, video_source: 'url', video_file: null})}
+                    onChange={() => setForm({ ...form, video_source: 'url', video_file: null })}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700"> URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">URL</span>
                 </label>
               </div>
 
-              {/* Option Fichier */}
               {form.video_source === 'file' && (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
@@ -420,7 +448,7 @@ export default function Divertissements() {
                   <div className="flex items-center justify-center w-full">
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                        <svg className="w-8 h-8 mb-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                           <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                         </svg>
                         <p className="mb-2 text-sm text-gray-500">
@@ -428,106 +456,100 @@ export default function Divertissements() {
                         </p>
                         <p className="text-xs text-gray-500">MP4, WebM, OGG (MAX. 100MB)</p>
                       </div>
-                      <input 
-                        type="file" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        className="hidden"
                         accept="video/*"
-                        onChange={e => handleVideoSelect(e.target.files[0])}
+                        onChange={e => handleFileSelect(e.target.files[0])}
                         required={!editId}
-                        disabled={uploadingVideo}
+                        disabled={uploading}
                       />
                     </label>
                   </div>
-                  {uploadingVideo && (
+                  {uploading && (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm text-blue-800 font-medium">Upload vidéo...</p>
-                        <span className="text-sm text-blue-600">{uploadVideoProgress}%</span>
+                        <span className="text-sm text-blue-600">{uploadProgress}%</span>
                       </div>
                       <div className="w-full bg-blue-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${uploadVideoProgress}%` }}
-                        />
+                        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                       </div>
                     </div>
                   )}
-                  {form.video_url && !uploadingVideo && (
+                  {form.video_url && !uploading && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800"> Vidéo uploadée</p>
+                      <p className="text-sm text-green-800">Vidéo uploadée</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
                     </div>
                   )}
+                  {uploadError && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                      <p className="text-sm text-red-800">{uploadError}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Option URL */}
               {form.video_source === 'url' && (
                 <FormInput
                   label="URL de la Vidéo"
                   placeholder="https://exemple.com/video.mp4"
                   type="url"
                   value={form.video_url}
-                  onChange={e => setForm({...form, video_url: e.target.value})}
+                  onChange={e => setForm({ ...form, video_url: e.target.value })}
                   required
                 />
               )}
             </div>
 
-            {/* Upload Image avec ImageUpload */}
             <ImageUpload
-              label="Image du Divertissement"
+              label="Image principale"
               value={form.image}
-              onChange={(url) => setForm({...form, image: url})}
+              onChange={(url) => setForm({ ...form, image: url })}
               disabled={submitting}
-              helperText="Sélectionnez une image pour le divertissement (JPG, PNG, GIF, WebP - max 5MB)"
+              helperText="Sélectionnez une image pour l'émission ou l'événement"
+            />
+
+            <FormTextarea
+              label="Description"
+              placeholder="Description détaillée de l'émission ou de l'événement..."
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              rows={4}
               required
             />
 
-            {/* Option pour désactiver les commentaires */}
+            {/* Options */}
             <div className="space-y-2">
               <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={!form.allow_comments}
-                  onChange={e => setForm({...form, allow_comments: !e.target.checked})}
+                  onChange={e => setForm({ ...form, allow_comments: !e.target.checked })}
                   className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
-                <span className="ml-2 text-sm font-medium text-gray-700">
-                   Désactiver les commentaires
-                </span>
+                <span className="ml-2 text-sm font-medium text-gray-700">Désactiver les commentaires</span>
               </label>
-              <p className="text-xs text-gray-500 ml-6">
-                Cochez cette case si vous ne voulez pas autoriser les commentaires sur ce divertissement.
-                Les utilisateurs pourront voir le divertissement mais ne pourront pas commenter.
-              </p>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button 
-                type="submit" 
-                variant="primary" 
-                fullWidth
-                disabled={submitting || uploadingVideo}
-              >
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <Button type="submit" variant="primary" fullWidth disabled={submitting || uploading}>
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {editId ? 'Modification...' : 'Création...'}
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Enregistrement...
                   </span>
                 ) : (
                   editId ? 'Mettre à jour' : 'Créer'
                 )}
               </Button>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                fullWidth 
-                onClick={handleClose}
-                disabled={submitting}
-              >
+              <Button type="button" variant="ghost" fullWidth onClick={handleCloseDrawer} disabled={submitting}>
                 Annuler
               </Button>
             </div>
@@ -535,19 +557,15 @@ export default function Divertissements() {
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des divertissements..." />
+          <Loader size="lg" text="Chargement..." />
         ) : items.length === 0 ? (
-          <EmptyState icon="" title="Aucun divertissement" message="Créez votre premier divertissement." />
+          <EmptyState
+            title="Aucun élément"
+            message="Créez votre premier contenu de télé réalité ou événement."
+          />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable 
-              columns={columns} 
-              data={items} 
-              actions={actions} 
-              onRowClick={handleRowClick} 
-            />
-            
-            {/* Pagination */}
+            <DataTable columns={columns} data={items} actions={actions} onRowClick={handleRowClick} />
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -562,56 +580,42 @@ export default function Divertissements() {
         )}
       </div>
 
-      {/* Modal de confirmation de suppression */}
       <ConfirmModal
         isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setItemToDelete(null);
-        }}
+        onClose={() => { setDeleteModalOpen(false); setItemToDelete(null); }}
         onConfirm={confirmDelete}
-        title="Supprimer le Divertissement"
-        message={`Êtes-vous sûr de vouloir supprimer le divertissement "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer l'élément"
+        message={`Êtes-vous sûr de vouloir supprimer "${itemToDelete?.title}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"
       />
 
-      {/* Vue détaillée */}
       {showDetailView && selectedItem && (
         <Drawer
           isOpen={showDetailView}
-          onClose={() => {
-            setShowDetailView(false);
-            setSelectedItem(null);
-          }}
-          title="Détails du divertissement"
+          onClose={() => { setShowDetailView(false); setSelectedItem(null); }}
+          title="Détails"
         >
           <DetailView
             title={selectedItem.title}
             data={selectedItem}
-            onClose={() => {
-              setShowDetailView(false);
-              setSelectedItem(null);
-            }}
-            onEdit={() => {
-              setShowDetailView(false);
-              handleEdit(selectedItem);
-            }}
-            onDelete={() => {
-              setShowDetailView(false);
-              handleDelete(selectedItem);
-            }}
+            onClose={() => { setShowDetailView(false); setSelectedItem(null); }}
+            onEdit={() => { setShowDetailView(false); handleEdit(selectedItem); }}
+            onDelete={() => { setShowDetailView(false); handleDelete(selectedItem); }}
             fields={[
               { key: 'image', label: 'Image', type: 'image' },
               { key: 'description', label: 'Description', type: 'textarea' },
               { key: 'category', label: 'Catégorie' },
+              { key: 'sub_type', label: 'Type' },
+              { key: 'host', label: 'Animateur' },
               { key: 'video_url', label: 'Vidéo', type: 'url' },
+              { key: 'is_live', label: 'En direct', type: 'boolean' },
+              { key: 'is_upcoming', label: 'A venir', type: 'boolean' },
               { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
-              { key: 'views_count', label: 'Nombre de vues' },
-              { key: 'likes_count', label: 'Nombre de likes' },
+              { key: 'views', label: 'Vues' },
               { key: 'created_at', label: 'Date de création', type: 'date' },
-              { key: 'updated_at', label: 'Dernière modification', type: 'date' }
+              { key: 'updated_at', label: 'Dernière modification', type: 'date' },
             ]}
           />
         </Drawer>

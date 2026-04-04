@@ -297,11 +297,11 @@ export default function Archives() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier l\'Archive' : '➕ Nouvelle Archive'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier l\'Archive' : ' Nouvelle Archive'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
               <p className="text-sm text-purple-800">
-                <strong>💎 Archives Premium :</strong> Les archives sont des contenus vidéo premium accessibles uniquement aux abonnés ou via achat individuel.
+                <strong> Archives Premium :</strong> Les archives sont des contenus vidéo premium accessibles uniquement aux abonnés ou via achat individuel.
               </p>
             </div>
 
@@ -351,7 +351,7 @@ export default function Archives() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -362,7 +362,7 @@ export default function Archives() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> URL</span>
                 </label>
               </div>
 
@@ -409,7 +409,7 @@ export default function Archives() {
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
+                      <p className="text-sm text-green-800"> Vidéo uploadée avec succès</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
@@ -464,7 +464,7 @@ export default function Archives() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Modifier' : '✨ Créer'
+                  editId ? ' Modifier' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -473,7 +473,7 @@ export default function Archives() {
                 onClick={handleCloseDrawer} 
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -483,7 +483,7 @@ export default function Archives() {
           <Loader size="lg" text="Chargement des archives..." />
         ) : items.length === 0 ? (
           <EmptyState 
-            icon="📹"
+            icon=""
             title="Aucune archive"
             message="Créez votre première archive pour la voir apparaître ici."
           />

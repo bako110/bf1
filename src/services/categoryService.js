@@ -1,21 +1,35 @@
 import api from '../config/api';
 
-export async function fetchCategories() {
-  const response = await api.get('/categories');
+const SECTIONS = [
+  { key: 'flash_infos',    label: 'Flash Infos' },
+  { key: 'jtandmag',       label: 'JT et Mag' },
+  { key: 'reportage',      label: 'Reportages' },
+  { key: 'divertissement', label: 'Divertissement et Mag' },
+  { key: 'sport',          label: 'Sport' },
+  { key: 'tele_realite',   label: 'Télé Réalité et Événements' },
+];
+
+export { SECTIONS };
+
+export async function fetchCategories(section = null, activeOnly = false) {
+  const params = {};
+  if (section) params.section = section;
+  if (activeOnly) params.active_only = true;
+  const response = await api.get('/section-categories', { params });
   return response.data;
 }
 
 export async function createCategory(data) {
-  const response = await api.post('/categories', data);
+  const response = await api.post('/section-categories', data);
   return response.data;
 }
 
 export async function updateCategory(id, data) {
-  const response = await api.put(`/categories/${id}`, data);
+  const response = await api.patch(`/section-categories/${id}`, data);
   return response.data;
 }
 
 export async function deleteCategory(id) {
-  const response = await api.delete(`/categories/${id}`);
+  const response = await api.delete(`/section-categories/${id}`);
   return response.data;
 }

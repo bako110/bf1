@@ -144,7 +144,7 @@ export default function Subscriptions() {
             <Loader size="lg" text="Chargement des abonnements..." />
           ) : subs.length === 0 ? (
             <EmptyState 
-              icon="📋"
+              icon=""
               title="Aucun abonnement"
               message="Aucun abonnement en attente."
             />

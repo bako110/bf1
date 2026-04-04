@@ -289,7 +289,7 @@ export default function Messages() {
                   <div className="text-center">
                     {tickets.length === 0 ? (
                       <EmptyState 
-                        icon="🎫"
+                        icon=""
                         title="Aucun ticket"
                         message="Aucun ticket de support"
                       />

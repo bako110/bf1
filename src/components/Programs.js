@@ -222,7 +222,7 @@ export default function Programs() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="📅 Guide des Programmes (EPG)"
+          title=" Guide des Programmes (EPG)"
           description="Gérer la grille des programmes TV - Electronic Program Guide"
           action={
             <Button 
@@ -260,11 +260,11 @@ export default function Programs() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? '✏️ Modifier le Programme' : '➕ Nouveau Programme'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? ' Modifier le Programme' : ' Nouveau Programme'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un programme EPG complet.
+                <strong> Astuce :</strong> Remplissez tous les champs pour créer un programme EPG complet.
               </p>
             </div>
 
@@ -342,7 +342,7 @@ export default function Programs() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -352,7 +352,7 @@ export default function Programs() {
                 onClick={handleClose}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -362,7 +362,7 @@ export default function Programs() {
           <Loader size="lg" text="Chargement des programmes EPG..." />
         ) : programs.length === 0 ? (
           <EmptyState 
-            icon="📅"
+            icon=""
             title="Aucun programme"
             message="Créez votre premier programme EPG pour le voir apparaître ici."
           />

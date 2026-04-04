@@ -106,7 +106,7 @@ export default function EpisodeManager({ series, onClose }) {
         // Si c'est un objet avec propriété data
         episodesList = data.data;
       } else {
-        console.warn('⚠️ Format de réponse inattendu:', data);
+        console.warn(' Format de réponse inattendu:', data);
         episodesList = [];
       }
       
@@ -437,7 +437,7 @@ export default function EpisodeManager({ series, onClose }) {
 
         {seasons.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <div className="text-6xl text-gray-300 mb-4">📺</div>
+            <div className="text-6xl text-gray-300 mb-4"></div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Aucune saison disponible
             </h3>
@@ -447,7 +447,7 @@ export default function EpisodeManager({ series, onClose }) {
           </div>
         ) : episodes.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <div className="text-6xl text-gray-300 mb-4">🎬</div>
+            <div className="text-6xl text-gray-300 mb-4"></div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Aucun épisode
             </h3>
@@ -634,7 +634,7 @@ export default function EpisodeManager({ series, onClose }) {
                       )}
                       {form.video_url && !uploadingVideo && (
                         <p className="text-sm text-green-600 mt-1">
-                          ✓ Vidéo uploadée
+                           Vidéo uploadée
                         </p>
                       )}
                     </div>

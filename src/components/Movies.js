@@ -370,11 +370,11 @@ export default function Movies() {
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Film' : '➕ Nouveau Film'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier le Film' : ' Nouveau Film'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
               <p className="text-sm text-purple-800">
-                <strong>💡 Astuce :</strong> Remplissez tous les champs pour créer un film complet.
+                <strong> Astuce :</strong> Remplissez tous les champs pour créer un film complet.
               </p>
             </div>
 
@@ -425,7 +425,7 @@ export default function Movies() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -436,7 +436,7 @@ export default function Movies() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> URL</span>
                 </label>
               </div>
 
@@ -483,7 +483,7 @@ export default function Movies() {
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ Vidéo uploadée</p>
+                      <p className="text-sm text-green-800"> Vidéo uploadée</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
@@ -533,7 +533,7 @@ export default function Movies() {
                   className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
-                  🚫 Désactiver les commentaires
+                   Désactiver les commentaires
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
@@ -571,7 +571,7 @@ export default function Movies() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -581,7 +581,7 @@ export default function Movies() {
                 onClick={handleCloseDrawer}
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -591,7 +591,7 @@ export default function Movies() {
           <Loader size="lg" text="Chargement des films..." />
         ) : movies.length === 0 ? (
           <EmptyState 
-            icon="🎬"
+            icon=""
             title="Aucun film"
             message="Créez votre premier film pour le voir apparaître ici."
           />

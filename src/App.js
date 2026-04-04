@@ -3,8 +3,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AdminLogin from './screens/AdminLogin';
 import UsersScreen from './screens/UsersScreen';
-import ShowsScreen from './screens/ShowsScreen';
-import MoviesScreen from './screens/MoviesScreen';
+// import ShowsScreen from './screens/ShowsScreen';
+// import MoviesScreen from './screens/MoviesScreen';
 import SubscriptionsScreen from './screens/SubscriptionsScreen';
 import Messages from './components/Messages';
 import Dashboard from './components/Dashboard';
@@ -34,7 +34,8 @@ import Archives from './components/Archives';
 import LiveControlScreen from './screens/LiveControlScreen';
 import Categories from './components/Categories';
 import Sports from './components/Sports';
-import Series from './components/Series';
+// import Series from './components/Series';
+import TeleRealite from './components/TeleRealite';
 import EmissionCategoriesScreen from './screens/EmissionCategoriesScreen';
 import Carousel from './components/Carousel';
 
@@ -73,9 +74,7 @@ function App() {
         <main className="mt-16 p-6">
           {section === 'dashboard' && <Dashboard />}
           {section === 'users' && <UsersScreen />}
-          {section === 'shows' && <ShowsScreen />}
-          {section === 'movies' && <MoviesScreen />}
-          {section === 'series' && <Series />}
+          {section === 'teleRealite' && <TeleRealite />}
           {section === 'breakingNews' && <BreakingNews />}
           {section === 'messages' && <Messages />}
           {section === 'reportage' && <Reportages />}

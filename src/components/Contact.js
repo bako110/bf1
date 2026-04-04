@@ -188,7 +188,7 @@ export default function Contact() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-lg shadow-sm p-8 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl">ℹ️</span>
+                <span className="text-3xl">ℹ</span>
                 <h3 className="text-2xl font-bold text-gray-900">À Propos</h3>
               </div>
               <div className="space-y-6">
@@ -217,7 +217,7 @@ export default function Contact() {
 
             <div className="bg-white rounded-lg shadow-sm p-8 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl">🌐</span>
+                <span className="text-3xl"></span>
                 <h3 className="text-2xl font-bold text-gray-900">Réseaux Sociaux</h3>
               </div>
               {aboutInfo.socials && Object.keys(aboutInfo.socials).length > 0 ? (

@@ -231,7 +231,7 @@ export default function Users() {
           <Loader size="lg" text="Chargement des utilisateurs..." />
         ) : users.length === 0 ? (
           <EmptyState 
-            icon="👥"
+            icon=""
             title="Aucun utilisateur"
             message="Créez votre premier utilisateur pour le voir apparaître ici."
           />

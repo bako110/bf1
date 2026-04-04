@@ -54,24 +54,24 @@ export default function Sports() {
   const loadSports = async () => {
     try {
       setLoading(true);
-      console.log('📋 Chargement des sports...');
+      console.log(' Chargement des sports...');
       const data = await sportService.getAllSports();
-      console.log('✅ Sports récupérés:', data);
-      console.log('📊 Nombre de sports:', data.length);
+      console.log(' Sports récupérés:', data);
+      console.log(' Nombre de sports:', data.length);
       
       if (data.length === 0) {
-        console.log('📭 Aucun sport trouvé');
+        console.log(' Aucun sport trouvé');
         setSuccess('');
         setError('');
       } else {
-        console.log('📋 Premier sport:', data[0]);
+        console.log(' Premier sport:', data[0]);
         setSuccess('');
         setError('');
       }
       
       setSports(data);
     } catch (error) {
-      console.error('❌ Erreur lors du chargement des sports:', error);
+      console.error(' Erreur lors du chargement des sports:', error);
       
       // Gérer les messages d'erreur spécifiques
       let errorMessage = 'Erreur lors du chargement des sports.';
@@ -153,7 +153,7 @@ export default function Sports() {
         is_active: form.is_active !== false
       };
       
-      console.log('📤 Données envoyées au backend:', sportData);
+      console.log(' Données envoyées au backend:', sportData);
       
       if (editId) {
         await sportService.updateSport(editId, sportData);
@@ -200,9 +200,9 @@ export default function Sports() {
   }
 
   function handleDelete(item) {
-    console.log('🗑️ Élément à supprimer:', item);
-    console.log('🆔 id de l\'élément:', item.id);
-    console.log('🆔 _id de l\'élément:', item._id);
+    console.log(' Élément à supprimer:', item);
+    console.log(' id de l\'élément:', item.id);
+    console.log(' _id de l\'élément:', item._id);
     setItemToDelete(item);
     setDeleteModalOpen(true);
   }
@@ -210,11 +210,11 @@ export default function Sports() {
   async function confirmDelete() {
     if (!itemToDelete) return;
     const id = itemToDelete.id || itemToDelete._id; // Utiliser id ou _id
-    console.log('🗑️ Tentative de suppression - ID:', id);
-    console.log('🗑️ Élément complet:', itemToDelete);
+    console.log(' Tentative de suppression - ID:', id);
+    console.log(' Élément complet:', itemToDelete);
     
     if (!id) {
-      console.error('❌ ID undefined, élément:', itemToDelete);
+      console.error(' ID undefined, élément:', itemToDelete);
       setError('Erreur: ID du sport non trouvé');
       return;
     }
@@ -222,7 +222,7 @@ export default function Sports() {
     setError('');
     setSuccess('');
     try {
-      console.log('🗑️ Suppression du sport:', id);
+      console.log(' Suppression du sport:', id);
       await sportService.deleteSport(id);
       setSuccess('Sport supprimé avec succès.');
       loadSports();
@@ -251,7 +251,7 @@ export default function Sports() {
   }
 
   function handleEdit(item) {
-    console.log('✏️ Édition du sport:', item);
+    console.log(' Édition du sport:', item);
     setForm({ 
       title: item.title || '', 
       description: item.description || '',
@@ -266,7 +266,7 @@ export default function Sports() {
       teams: item.teams || []
     });
     const id = item.id || item._id; // Utiliser id ou _id
-    console.log('📝 ID du sport à éditer:', id);
+    console.log(' ID du sport à éditer:', id);
     setEditId(id);
     setIsDrawerOpen(true);
     setError('');
@@ -399,7 +399,7 @@ export default function Sports() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
               <p className="text-sm text-green-800">
-                <strong>⚽ Astuce :</strong> Ajoutez les actualités et contenus sportifs les plus récents.
+                <strong> Astuce :</strong> Ajoutez les actualités et contenus sportifs les plus récents.
               </p>
             </div>
 
@@ -451,7 +451,7 @@ export default function Sports() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -462,7 +462,7 @@ export default function Sports() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700"> URL</span>
                 </label>
               </div>
 
@@ -506,7 +506,7 @@ export default function Sports() {
                   )}
                   {form.video_url && !uploadingVideo && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800">✓ Vidéo uploadée avec succès</p>
+                      <p className="text-sm text-green-800"> Vidéo uploadée avec succès</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
@@ -568,7 +568,7 @@ export default function Sports() {
                     {editId ? 'Modification...' : 'Création...'}
                   </span>
                 ) : (
-                  editId ? '💾 Mettre à jour' : '✨ Créer'
+                  editId ? ' Mettre à jour' : ' Créer'
                 )}
               </Button>
               <Button 
@@ -578,7 +578,7 @@ export default function Sports() {
                 onClick={handleClose} 
                 disabled={submitting}
               >
-                ❌ Annuler
+                 Annuler
               </Button>
             </div>
           </form>
@@ -588,7 +588,7 @@ export default function Sports() {
           <Loader size="lg" text="Chargement des sports..." />
         ) : sports.length === 0 ? (
           <EmptyState 
-            icon="⚽"
+            icon=""
             title="Aucun sport" 
             message="Aucun contenu sportif n'est disponible. Créez votre premier sport pour commencer." 
           />

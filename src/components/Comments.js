@@ -88,7 +88,7 @@ export default function Comments() {
     { 
       key: 'is_hidden', 
       label: 'Statut',
-      render: (val) => val ? '❌ Masqué' : '✅ Visible'
+      render: (val) => val ? ' Masqué' : ' Visible'
     },
     { 
       key: 'created_at', 
@@ -134,7 +134,7 @@ export default function Comments() {
           <Loader size="lg" text="Chargement des commentaires..." />
         ) : items.length === 0 ? (
           <EmptyState 
-            icon="💬"
+            icon=""
             title="Aucun commentaire"
             message="Il n'y a pas encore de commentaires à afficher."
           />
