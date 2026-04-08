@@ -67,7 +67,7 @@ export default function BreakingNews() {
         setItems(data.items || data);
       }
       setTotalItems(data.total || data.length);
-      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setTotalPages(Math.ceil((data.total || 0) / itemsPerPage) || 1);
       setCurrentPage(page);
     } catch (e) {
       setError('Erreur lors du chargement des actualités urgentes.');

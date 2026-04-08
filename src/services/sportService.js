@@ -4,10 +4,11 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.137.1:8000
 
 const sportService = {
   // Récupérer tous les sports
-  getAllSports: async () => {
+  getAllSports: async (page = 1, limit = 20) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sports`);
-      return response.data.sports || [];
+      const skip = (page - 1) * limit;
+      const response = await axios.get(`${API_BASE_URL}/sports?skip=${skip}&limit=${limit}`);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des sports:', error);
       throw error;

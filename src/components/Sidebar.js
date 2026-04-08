@@ -20,6 +20,7 @@ const sections = [
   { label: 'Divertissements', key: 'divertissement' },
   { label: 'Télé Réalité et Animation', key: 'teleRealite' },
   { label: 'Archives', key: 'archives' },
+  { label: 'Contenus Manqués', key: 'missed' },
   // { label: 'Engagement', key: 'submenu_engagement', isHeader: true },
   // { label: 'Commentaires', key: 'comments' },
   // { label: 'Likes', key: 'likes' },

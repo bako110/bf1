@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { sportService } from '../services/sportService';
 import { uploadVideo } from '../services/uploadService'; // Correction: utilisation du bon service
 import Drawer from './Drawer';
@@ -13,6 +13,7 @@ import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 import DetailView from './ui/DetailView';
+import Pagination from './ui/Pagination';
 
 export default function Sports() {
   const [sports, setSports] = useState([]);
@@ -24,6 +25,11 @@ export default function Sports() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginationLoading, setPaginationLoading] = useState(false);
+  const itemsPerPage = 20;
   
   // États pour l'upload vidéo
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -51,45 +57,27 @@ export default function Sports() {
     loadSports();
   }, []);
 
-  const loadSports = async () => {
+  const loadSports = async (page = 1) => {
     try {
-      setLoading(true);
-      console.log(' Chargement des sports...');
-      const data = await sportService.getAllSports();
-      console.log(' Sports récupérés:', data);
-      console.log(' Nombre de sports:', data.length);
-      
-      if (data.length === 0) {
-        console.log(' Aucun sport trouvé');
-        setSuccess('');
-        setError('');
-      } else {
-        console.log(' Premier sport:', data[0]);
-        setSuccess('');
-        setError('');
-      }
-      
-      setSports(data);
+      if (page === 1) setLoading(true);
+      else setPaginationLoading(true);
+      setError('');
+      const data = await sportService.getAllSports(page, itemsPerPage);
+      setSports(data.items || []);
+      setTotalItems(data.total || 0);
+      setTotalPages(Math.ceil((data.total || 0) / itemsPerPage) || 1);
+      setCurrentPage(page);
     } catch (error) {
-      console.error(' Erreur lors du chargement des sports:', error);
-      
-      // Gérer les messages d'erreur spécifiques
       let errorMessage = 'Erreur lors du chargement des sports.';
       if (error.response?.data?.detail) {
-        if (error.response.data.detail.includes('Aucun sport')) {
-          errorMessage = 'Aucun sport disponible dans la base de données.';
-          setSports([]); // Vider la liste
-        } else {
-          errorMessage = error.response.data.detail;
-        }
+        errorMessage = error.response.data.detail;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
       setError(errorMessage);
-      setSuccess('');
     } finally {
       setLoading(false);
+      setPaginationLoading(false);
     }
   };
 
@@ -594,11 +582,21 @@ export default function Sports() {
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable 
-              columns={columns} 
-              data={sports} 
-              actions={actions} 
-              onRowClick={handleRowClick} 
+            <DataTable
+              columns={columns}
+              data={sports}
+              actions={actions}
+              onRowClick={handleRowClick}
+            />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => loadSports(page)}
+              hasNextPage={currentPage < totalPages}
+              hasPrevPage={currentPage > 1}
+              loading={paginationLoading}
             />
           </div>
         )}

@@ -1,7 +1,8 @@
 import api from '../config/api';
 
 export async function fetchArchives(page = 1, limit = 20) {
-  const res = await api.get(`/archives?page=${page}&limit=${limit}`);
+  const skip = (page - 1) * limit;
+  const res = await api.get(`/archives?skip=${skip}&limit=${limit}`);
   return res.data;
 }
 

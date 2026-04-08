@@ -38,6 +38,7 @@ import Sports from './components/Sports';
 import TeleRealite from './components/TeleRealite';
 import EmissionCategoriesScreen from './screens/EmissionCategoriesScreen';
 import Carousel from './components/Carousel';
+import MissedScreen from './screens/MissedScreen';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -97,6 +98,7 @@ function App() {
           {section === 'sports' && <Sports />}
           {section === 'emissionCategories' && <EmissionCategoriesScreen />}
           {section === 'carousel' && <Carousel />}
+          {section === 'missed' && <MissedScreen />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
           {section === 'settings' && <SettingsScreen />}

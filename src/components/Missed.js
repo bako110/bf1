@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchReportages, createReportage, updateReportage, deleteReportage } from '../services/reportageService';
+import { fetchMissed, createMissed, updateMissed, deleteMissed } from '../services/missedService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -16,7 +16,7 @@ import Pagination from './ui/Pagination';
 import DetailView from './ui/DetailView';
 import { fetchCategories } from '../services/categoryService';
 
-export default function Reportages() {
+export default function Missed() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,14 +26,17 @@ export default function Reportages() {
     description: '', 
     category: '', 
     thumbnail: '', 
+    image_url: '',
     video_file: null,
     video_url: '',
     video_source: 'file',
-    duration_minutes: 0, 
+    duration: 0, 
     views: 0, 
-    rating: 0, 
     aired_at: '', 
-    allow_comments: true
+    allow_comments: true,
+    is_premium: false,
+    required_subscription_category: '',
+    tags: []
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -46,33 +49,29 @@ export default function Reportages() {
   const [paginationLoading, setPaginationLoading] = useState(false);
   const itemsPerPage = 20;
   
-  // États pour l'upload Cloudinary
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
   
-  // État pour les catégories
   const [categories, setCategories] = useState([]);
-
-  // États pour la vue détaillée
   const [showDetailView, setShowDetailView] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
-    loadReportages();
+    loadMissed();
     loadCategories();
   }, []);
 
   async function loadCategories() {
     try {
-      const data = await fetchCategories('reportage', false);
+      const data = await fetchCategories('missed', false);
       setCategories(data || []);
     } catch (e) {
       console.error('Erreur chargement catégories:', e);
     }
   }
 
-  async function loadReportages(page = 1, append = false) {
+  async function loadMissed(page = 1, append = false) {
     if (!append) {
       setLoading(true);
     } else {
@@ -80,7 +79,7 @@ export default function Reportages() {
     }
     setError('');
     try {
-      const data = await fetchReportages(page, itemsPerPage);
+      const data = await fetchMissed(page, itemsPerPage);
       if (append) {
         setItems(prev => [...prev, ...data.items]);
       } else {
@@ -90,24 +89,22 @@ export default function Reportages() {
       setTotalPages(Math.ceil((data.total || 0) / itemsPerPage) || 1);
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des reportages.');
+      setError('Erreur lors du chargement des contenus manqués.');
     }
     setLoading(false);
     setPaginationLoading(false);
   }
 
-  // Handlers de pagination
   const handlePageChange = (page) => {
-    loadReportages(page);
+    loadMissed(page);
   };
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
-      loadReportages(currentPage + 1, true);
+      loadMissed(currentPage + 1, true);
     }
   };
 
-  // Upload automatique vers Cloudinary via backend
   async function handleFileSelect(file) {
     if (!file) return;
     
@@ -117,7 +114,6 @@ export default function Reportages() {
     setUploadProgress(0);
     
     try {
-      // Utiliser l'endpoint backend pour l'upload
       const token = localStorage.getItem('admin_token');
       const formData = new FormData();
       formData.append('file', file);
@@ -134,15 +130,13 @@ export default function Reportages() {
       xhr.addEventListener('load', () => {
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
-          // Le backend retourne { success, message, data: { url, public_id, ... } }
           const videoUrl = response.data?.url || response.data?.secure_url || response.url;
           setForm(prev => ({...prev, video_url: videoUrl}));
           setUploadProgress(100);
           
-          // Extraire la durée si disponible
           if (response.data?.duration) {
             const minutes = Math.ceil(response.data.duration / 60);
-            setForm(prev => ({...prev, duration_minutes: minutes}));
+            setForm(prev => ({...prev, duration: minutes}));
           }
         } else {
           const errorData = JSON.parse(xhr.responseText);
@@ -173,7 +167,6 @@ export default function Reportages() {
     setError('');
     setSuccess('');
     
-    // Vérifier que l'upload est terminé
     if (uploading) {
       setError('Veuillez attendre la fin de l\'upload de la vidéo');
       return;
@@ -187,30 +180,32 @@ export default function Reportages() {
     setSubmitting(true);
     
     try {
-      // Préparer les données selon le schéma backend
-      const replayData = {
+      const missedData = {
         title: form.title,
         description: form.description,
         category: form.category,
         video_url: form.video_url || null,
         thumbnail: form.thumbnail || null,
-        duration_minutes: parseInt(form.duration_minutes) || 1,
+        image_url: form.image_url || null,
+        duration: parseInt(form.duration) || 1,
         aired_at: form.aired_at ? new Date(form.aired_at).toISOString() : new Date().toISOString(),
-        host: null,
-        allow_comments: form.allow_comments === false ? false : true
+        allow_comments: form.allow_comments === false ? false : true,
+        is_premium: form.is_premium || false,
+        required_subscription_category: form.is_premium ? form.required_subscription_category : null,
+        tags: form.tags || []
       };
       
-      console.log(' Données envoyées au backend:', replayData);
+      console.log('📤 Données envoyées au backend:', missedData);
       
       if (editId) {
-        await updateReportage(editId, replayData);
-        setSuccess('Reportage modifié avec succès.');
+        await updateMissed(editId, missedData);
+        setSuccess('Contenu manqué modifié avec succès.');
       } else {
-        await createReportage(replayData);
-        setSuccess('Reportage créé avec succès.');
+        await createMissed(missedData);
+        setSuccess('Contenu manqué créé avec succès.');
       }
       handleCloseDrawer();
-      loadReportages();
+      loadMissed();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
     } finally {
@@ -228,9 +223,9 @@ export default function Reportages() {
     
     const id = itemToDelete.id || itemToDelete._id;
     try {
-      await deleteReportage(id);
-      setSuccess('Reportage supprimé.');
-      loadReportages();
+      await deleteMissed(id);
+      setSuccess('Contenu manqué supprimé.');
+      loadMissed();
     } catch (e) {
       setError('Erreur lors de la suppression.');
     } finally {
@@ -244,9 +239,9 @@ export default function Reportages() {
     const newStatus = !item.allow_comments;
     
     try {
-      await updateReportage(itemId, { allow_comments: newStatus });
+      await updateMissed(itemId, { allow_comments: newStatus });
       setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
-      loadReportages();
+      loadMissed();
     } catch (e) {
       setError('Erreur lors de la modification des commentaires.');
     }
@@ -258,14 +253,17 @@ export default function Reportages() {
       description: item.description || '',
       category: item.category || '',
       thumbnail: item.thumbnail || '',
+      image_url: item.image_url || '',
       video_file: null,
       video_url: item.video_url || '',
       video_source: item.video_url ? 'url' : 'file',
-      duration_minutes: item.duration_minutes || 0,
+      duration: item.duration || 0,
       views: item.views || 0,
-      rating: item.rating || 0,
       aired_at: item.aired_at ? new Date(item.aired_at).toISOString().split('T')[0] : '',
-      allow_comments: item.allow_comments !== false
+      allow_comments: item.allow_comments !== false,
+      is_premium: item.is_premium || false,
+      required_subscription_category: item.required_subscription_category || '',
+      tags: item.tags || []
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -281,14 +279,17 @@ export default function Reportages() {
       description: '', 
       category: '', 
       thumbnail: '', 
+      image_url: '',
       video_file: null,
       video_url: '',
       video_source: 'file',
-      duration_minutes: 0, 
+      duration: 0, 
       views: 0, 
-      rating: 0, 
       aired_at: '', 
-      allow_comments: true
+      allow_comments: true,
+      is_premium: false,
+      required_subscription_category: '',
+      tags: []
     });
     setError('');
     setUploading(false);
@@ -321,6 +322,19 @@ export default function Reportages() {
       key: 'aired_at', 
       label: 'Diffusé le',
       render: (val) => val ? new Date(val).toLocaleDateString('fr-FR') : 'Aujourd\'hui'
+    },
+    { 
+      key: 'is_premium', 
+      label: 'Premium',
+      render: (value) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          value 
+            ? 'bg-yellow-100 text-yellow-800' 
+            : 'bg-gray-100 text-gray-800'
+        }`}>
+          {value ? '⭐ Premium' : 'Gratuit'}
+        </span>
+      )
     },
     { 
       key: 'allow_comments', 
@@ -372,24 +386,30 @@ export default function Reportages() {
     }
   ];
 
-  // Gestionnaire pour afficher les détails au clic sur une ligne
   const handleRowClick = (item) => {
     setSelectedItem(item);
     setShowDetailView(true);
   };
 
+  const subscriptionOptions = [
+    { value: '', label: 'Aucun (gratuit)' },
+    { value: 'basic', label: 'Basic' },
+    { value: 'standard', label: 'Standard' },
+    { value: 'premium', label: 'Premium' }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Reportages"
-          description="Créer et gérer les reportages d'émissions"
+          title="Gestion des Contenus Manqués"
+          description="Créer et gérer les contenus que vos utilisateurs ont manqués"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
-              + Nouveau Reportage
+              + Nouveau Contenu Manqué
             </Button>
           }
         />
@@ -397,7 +417,6 @@ export default function Reportages() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
-        {/* Bouton charger plus */}
         {items.length > 0 && currentPage < totalPages && (
           <div className="flex justify-center mb-6">
             <button
@@ -412,24 +431,24 @@ export default function Reportages() {
                 </>
               ) : (
                 <>
-                  Charger plus de reportages ({items.length}/{totalItems})
+                  Charger plus de contenus ({items.length}/{totalItems})
                 </>
               )}
             </button>
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier le Reportage' : ' Nouveau Reportage'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? '✏️ Modifier le Contenu' : '➕ Nouveau Contenu Manqué'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong> Astuce :</strong> Remplissez tous les champs pour créer un reportage complet.
+                <strong>💡 Astuce :</strong> Les contenus manqués permettent aux utilisateurs de rattraper ce qu'ils ont raté.
               </p>
             </div>
 
             <FormInput
-              label="Titre du Reportage"
-              placeholder="Reportage spécial - Événement du jour"
+              label="Titre du Contenu"
+              placeholder="Journal du 20h - Édition Spéciale"
               value={form.title}
               onChange={e => setForm({...form, title: e.target.value})}
               required
@@ -441,10 +460,9 @@ export default function Reportages() {
               onChange={e => setForm({...form, category: e.target.value})}
               options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
               required
-              helperText="Sélectionnez une catégorie existante ou créez-en une dans la section Catégories"
+              helperText="Sélectionnez une catégorie existante"
             />
 
-            {/* Sélecteur de source vidéo */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">Source Vidéo</label>
               <div className="flex gap-4">
@@ -457,7 +475,7 @@ export default function Reportages() {
                     onChange={e => setForm({...form, video_source: 'file', video_url: ''})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700"> Fichier</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">📁 Fichier</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input 
@@ -468,11 +486,10 @@ export default function Reportages() {
                     onChange={e => setForm({...form, video_source: 'url', video_file: null})}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700"> URL</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700">🔗 URL</span>
                 </label>
               </div>
 
-              {/* Option Fichier */}
               {form.video_source === 'file' && (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
@@ -515,7 +532,7 @@ export default function Reportages() {
                   )}
                   {form.video_url && !uploading && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-sm text-green-800"> Vidéo uploadée</p>
+                      <p className="text-sm text-green-800">✅ Vidéo uploadée</p>
                       {form.video_file && (
                         <p className="text-xs text-green-600 mt-1">Fichier: {form.video_file.name}</p>
                       )}
@@ -529,7 +546,6 @@ export default function Reportages() {
                 </div>
               )}
 
-              {/* Option URL */}
               {form.video_source === 'url' && (
                 <FormInput
                   label="URL de la Vidéo"
@@ -543,7 +559,7 @@ export default function Reportages() {
             </div>
 
             <ImageUpload
-              label="Miniature du Reportage"
+              label="Miniature du Contenu"
               value={form.thumbnail}
               onChange={(url) => setForm({...form, thumbnail: url})}
               disabled={submitting}
@@ -552,14 +568,57 @@ export default function Reportages() {
 
             <FormTextarea
               label="Description"
-              placeholder="Description détaillée du reportage..."
+              placeholder="Description détaillée du contenu..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
               required
             />
 
-            {/* Option pour désactiver les commentaires */}
+            <FormInput
+              label="Durée (minutes)"
+              type="number"
+              placeholder="45"
+              value={form.duration}
+              onChange={e => setForm({...form, duration: e.target.value})}
+              min="1"
+            />
+
+            <FormInput
+              label="Date de diffusion originale"
+              type="date"
+              value={form.aired_at}
+              onChange={e => setForm({...form, aired_at: e.target.value})}
+              helperText="Date à laquelle ce contenu a été diffusé initialement"
+            />
+
+            <div className="space-y-2">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_premium}
+                  onChange={e => setForm({...form, is_premium: e.target.checked})}
+                  className="w-4 h-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-700">
+                  ⭐ Contenu Premium
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                Cochez cette case si ce contenu nécessite un abonnement premium.
+              </p>
+            </div>
+
+            {form.is_premium && (
+              <FormSelect
+                label="Catégorie d'abonnement requise"
+                value={form.required_subscription_category}
+                onChange={e => setForm({...form, required_subscription_category: e.target.value})}
+                options={subscriptionOptions}
+                helperText="Niveau d'abonnement minimum requis"
+              />
+            )}
+
             <div className="space-y-2">
               <label className="flex items-center cursor-pointer">
                 <input
@@ -569,12 +628,11 @@ export default function Reportages() {
                   className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">
-                   Désactiver les commentaires
+                  🚫 Désactiver les commentaires
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
-                Cochez cette case si vous ne voulez pas autoriser les commentaires sur ce replay.
-                Les utilisateurs pourront voir le replay mais ne pourront pas commenter.
+                Les utilisateurs pourront voir le contenu mais ne pourront pas commenter.
               </p>
             </div>
 
@@ -594,7 +652,7 @@ export default function Reportages() {
                     Enregistrement...
                   </span>
                 ) : (
-                  editId ? ' Mettre à jour' : ' Créer'
+                  editId ? '✏️ Mettre à jour' : '➕ Créer'
                 )}
               </Button>
               <Button 
@@ -604,19 +662,19 @@ export default function Reportages() {
                 onClick={handleCloseDrawer}
                 disabled={submitting}
               >
-                 Annuler
+                ❌ Annuler
               </Button>
             </div>
           </form>
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des reportages..." />
+          <Loader size="lg" text="Chargement des contenus manqués..." />
         ) : items.length === 0 ? (
           <EmptyState 
-            icon=""
-            title="Aucun reportage"
-            message="Créez votre premier reportage pour le voir apparaître ici."
+            icon="📺"
+            title="Aucun contenu manqué"
+            message="Créez votre premier contenu manqué pour le voir apparaître ici."
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -627,7 +685,6 @@ export default function Reportages() {
               onRowClick={handleRowClick}
             />
             
-            {/* Pagination */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -642,7 +699,6 @@ export default function Reportages() {
         )}
       </div>
 
-      {/* Modal de confirmation de suppression */}
       <ConfirmModal
         isOpen={deleteModalOpen}
         onClose={() => {
@@ -650,14 +706,13 @@ export default function Reportages() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer le Reportage"
-        message={`Êtes-vous sûr de vouloir supprimer le reportage "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer le Contenu Manqué"
+        message={`Êtes-vous sûr de vouloir supprimer le contenu "${itemToDelete?.title}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"
       />
 
-      {/* Vue détaillée */}
       {showDetailView && selectedItem && (
         <Drawer
           isOpen={showDetailView}
@@ -665,7 +720,7 @@ export default function Reportages() {
             setShowDetailView(false);
             setSelectedItem(null);
           }}
-          title="Détails du reportage"
+          title="Détails du contenu manqué"
         >
           <DetailView
             title={selectedItem.title}
@@ -686,11 +741,13 @@ export default function Reportages() {
               { key: 'thumbnail', label: 'Vignette', type: 'image' },
               { key: 'description', label: 'Description', type: 'textarea' },
               { key: 'category', label: 'Catégorie' },
-              { key: 'duration_minutes', label: 'Durée (minutes)' },
+              { key: 'duration', label: 'Durée (minutes)' },
               { key: 'aired_at', label: 'Date de diffusion' },
               { key: 'video_url', label: 'Vidéo', type: 'url' },
               { key: 'views', label: 'Nombre de vues' },
-              { key: 'rating', label: 'Note' },
+              { key: 'likes', label: 'Nombre de likes' },
+              { key: 'is_premium', label: 'Contenu premium', type: 'boolean' },
+              { key: 'required_subscription_category', label: 'Abonnement requis' },
               { key: 'allow_comments', label: 'Commentaires autorisés', type: 'boolean' },
               { key: 'created_at', label: 'Date de création', type: 'date' },
               { key: 'updated_at', label: 'Dernière modification', type: 'date' }

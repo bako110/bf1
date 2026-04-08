@@ -5,7 +5,8 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.137.1:8000
 // Récupérer tous les JT et Magazines
 export const fetchJTandMag = async (page = 1, limit = 20) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/jtandmag?page=${page}&per_page=${limit}`);
+    const skip = (page - 1) * limit;
+    const response = await axios.get(`${API_BASE_URL}/jtandmag?skip=${skip}&limit=${limit}`);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des JT et Magazines:', error);
