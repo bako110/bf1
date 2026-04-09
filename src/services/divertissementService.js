@@ -75,6 +75,14 @@ export const deleteDivertissement = async (id) => {
   }
 };
 
+export const deleteBatchDivertissements = async (ids) => {
+  const token = localStorage.getItem('admin_token');
+  const response = await axios.post(`${API_BASE_URL}/divertissement/delete-batch`, { ids }, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  });
+  return response.data;
+};
+
 // Récupérer les divertissements en vedette
 export const getFeaturedDivertissements = async (limit = 10) => {
   try {

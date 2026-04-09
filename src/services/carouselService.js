@@ -35,3 +35,9 @@ export async function deleteCarouselItem(id) {
   const res = await api.delete(`/carousel/${id}`);
   return res.data;
 }
+
+/** Supprimer plusieurs slides en lot */
+export async function deleteBatchCarousel(ids) {
+  const res = await api.post('/carousel/delete-batch', { ids });
+  return res.data;
+}

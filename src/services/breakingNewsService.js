@@ -21,6 +21,11 @@ export async function deleteBreakingNews(id) {
   return res.data;
 }
 
+export async function deleteBatchBreakingNews(ids) {
+  const res = await api.post('/news/delete-batch', { ids });
+  return res.data;
+}
+
 export async function getBreakingNewsById(id) {
   const res = await api.get(`/news/${id}`);
   return res.data;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchBreakingNews, createBreakingNews, updateBreakingNews, deleteBreakingNews } from '../services/breakingNewsService';
+import { fetchBreakingNews, createBreakingNews, updateBreakingNews, deleteBreakingNews, deleteBatchBreakingNews } from '../services/breakingNewsService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -33,6 +33,7 @@ export default function BreakingNews() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // États pour la vue détaillée
   const [showDetailView, setShowDetailView] = useState(false);
@@ -114,12 +115,23 @@ export default function BreakingNews() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
     try {
-      await deleteBreakingNews(id);
-      setSuccess('Actualité urgente supprimée.');
+      if (itemToDelete) {
+        await deleteBreakingNews(idsToDelete[0]);
+      } else {
+        await deleteBatchBreakingNews(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} actualite${count > 1 ? 's supprimees' : ' supprimee'}.`);
+      setSelectedIds([]);
       loadBreakingNews();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -268,6 +280,26 @@ export default function BreakingNews() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">
+              {selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Supprimer la selection
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        )}
+
         {/* Bouton charger plus */}
         {items.length > 0 && currentPage < totalPages && (
           <div className="flex justify-center mb-6">
@@ -395,6 +427,9 @@ export default function BreakingNews() {
               data={items}
               actions={actions}
               onRowClick={handleRowClick}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
             
             {/* Pagination */}
@@ -420,8 +455,11 @@ export default function BreakingNews() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer l'Actualité Urgente"
-        message={`Êtes-vous sûr de vouloir supprimer l'actualité "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

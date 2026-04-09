@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchJTandMag, createJTandMag, updateJTandMag, deleteJTandMag } from '../services/jtandmagService';
+import { fetchJTandMag, createJTandMag, updateJTandMag, deleteJTandMag, deleteBatchJTandMag } from '../services/jtandmagService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -46,6 +46,7 @@ export default function JTandMag() {
   const itemsPerPage = 20;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [categories, setCategories] = useState([]);
 
   // États pour la vue détaillée
@@ -174,12 +175,23 @@ export default function JTandMag() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const itemId = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
     try {
-      await deleteJTandMag(itemId);
-      setSuccess('JT et Magazine supprimé.');
+      if (itemToDelete) {
+        await deleteJTandMag(idsToDelete[0]);
+      } else {
+        await deleteBatchJTandMag(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadJTandMag();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -314,6 +326,14 @@ export default function JTandMag() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
 
         {/* Bouton charger plus */}
         {items.length > 0 && currentPage < totalPages && (
@@ -547,6 +567,9 @@ export default function JTandMag() {
               data={items}
               actions={actions}
               onRowClick={handleRowClick}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
             
             {/* Pagination */}
@@ -572,8 +595,11 @@ export default function JTandMag() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer l'Émission"
-        message={`Êtes-vous sûr de vouloir supprimer l'émission "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

@@ -1,9 +1,10 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../config/api';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';
+import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
@@ -151,18 +152,6 @@ export default function Notifications() {
     setEditItem(null);
     setForm({ title: '', message: '', category: 'info' });
     setError('');
-  }
-
-  function toggleSelect(id) {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  }
-
-  function toggleSelectAll() {
-    if (selectedIds.length === items.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(items.map(i => i.id));
-    }
   }
 
   const columns = [
@@ -325,54 +314,14 @@ export default function Notifications() {
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-200 bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-4 w-10">
-                      <input
-                        type="checkbox"
-                        checked={items.length > 0 && selectedIds.length === items.length}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />
-                    </th>
-                    {columns.map(col => (
-                      <th key={col.key} className="px-6 py-4 font-semibold text-gray-900">{col.label}</th>
-                    ))}
-                    <th className="px-6 py-4 font-semibold text-gray-900 w-12">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((row, idx) => (
-                    <tr key={row.id || idx} className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${selectedIds.includes(row.id) ? 'bg-blue-50' : ''}`}>
-                      <td className="px-4 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(row.id)}
-                          onChange={() => toggleSelect(row.id)}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                      </td>
-                      {columns.map(col => (
-                        <td key={col.key} className="px-6 py-4 text-gray-700">
-                          {col.render ? col.render(row[col.key], row) : (row[col.key] || '-')}
-                        </td>
-                      ))}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {actions.map((action, ai) => (
-                            <button key={ai} onClick={() => action.onClick(row)} className={action.className}>
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              columns={columns}
+              data={items}
+              actions={actions}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+            />
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

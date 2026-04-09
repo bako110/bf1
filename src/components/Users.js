@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchUsers, createUser, updateUser, deleteUser } from '../services/userService';
+import { fetchUsers, createUser, updateUser, deleteUser, deleteBatchUsers } from '../services/userService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -21,6 +21,7 @@ export default function Users() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -92,13 +93,25 @@ export default function Users() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
+    setError('');
+    setSuccess('');
     try {
-      await deleteUser(id);
-      setSuccess('Utilisateur supprimé.');
+      if (itemToDelete) {
+        await deleteUser(idsToDelete[0]);
+      } else {
+        await deleteBatchUsers(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadUsers();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -157,6 +170,14 @@ export default function Users() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
 
         {/* Bouton charger plus */}
         {users.length > 0 && currentPage < totalPages && (
@@ -241,6 +262,9 @@ export default function Users() {
               columns={columns}
               data={users}
               actions={actions}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
             
             {/* Pagination */}
@@ -266,8 +290,11 @@ export default function Users() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer l'Utilisateur"
-        message={`Êtes-vous sûr de vouloir supprimer l'utilisateur "${itemToDelete?.username}" ? Cette action est irréversible.`}
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.username}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

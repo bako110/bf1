@@ -28,6 +28,11 @@ export async function deleteReel(id) {
   return res.data;
 }
 
+export async function deleteBatchReels(ids) {
+  const res = await api.post('/reels/delete-batch', { ids });
+  return res.data;
+}
+
 export async function getReelById(id) {
   const res = await api.get(`/reels/${id}`);
   return res.data;

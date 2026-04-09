@@ -75,6 +75,14 @@ export const deleteReportage = async (id) => {
   }
 };
 
+export const deleteBatchReportages = async (ids) => {
+  const token = localStorage.getItem('admin_token');
+  const response = await axios.post(`${API_BASE_URL}/reportage/delete-batch`, { ids }, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  });
+  return response.data;
+};
+
 // Récupérer les reportages en vedette
 export const getFeaturedReportages = async (limit = 10) => {
   try {

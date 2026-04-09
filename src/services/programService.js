@@ -24,3 +24,8 @@ export async function deleteProgram(id) {
   const res = await api.delete(`/programs/${id}`);
   return res.data;
 }
+
+export async function deleteBatchPrograms(ids) {
+  const res = await api.post('/programs/delete-batch', { ids });
+  return res.data;
+}

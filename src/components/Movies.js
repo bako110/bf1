@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchMovies, createMovie, updateMovie, deleteMovie } from '../services/movieService';
+import { fetchMovies, createMovie, updateMovie, deleteMovie, deleteBatchMovies } from '../services/movieService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -39,6 +39,7 @@ export default function Movies() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -173,13 +174,25 @@ export default function Movies() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
+    setError('');
+    setSuccess('');
     try {
-      await deleteMovie(id);
-      setSuccess('Film supprimé.');
+      if (itemToDelete) {
+        await deleteMovie(idsToDelete[0]);
+      } else {
+        await deleteBatchMovies(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadMovies();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -347,6 +360,14 @@ export default function Movies() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
 
         {/* Bouton charger plus */}
         {movies.length > 0 && currentPage < totalPages && (
@@ -602,6 +623,9 @@ export default function Movies() {
               data={movies}
               actions={actions}
               onRowClick={handleRowClick}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
             
             {/* Pagination */}
@@ -627,8 +651,11 @@ export default function Movies() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer le Film"
-        message={`Êtes-vous sûr de vouloir supprimer le film "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

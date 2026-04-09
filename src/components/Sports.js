@@ -25,6 +25,7 @@ export default function Sports() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -188,50 +189,32 @@ export default function Sports() {
   }
 
   function handleDelete(item) {
-    console.log(' Élément à supprimer:', item);
-    console.log(' id de l\'élément:', item.id);
-    console.log(' _id de l\'élément:', item._id);
     setItemToDelete(item);
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const id = itemToDelete.id || itemToDelete._id; // Utiliser id ou _id
-    console.log(' Tentative de suppression - ID:', id);
-    console.log(' Élément complet:', itemToDelete);
-    
-    if (!id) {
-      console.error(' ID undefined, élément:', itemToDelete);
-      setError('Erreur: ID du sport non trouvé');
-      return;
-    }
-    
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
     setError('');
     setSuccess('');
     try {
-      console.log(' Suppression du sport:', id);
-      await sportService.deleteSport(id);
-      setSuccess('Sport supprimé avec succès.');
+      if (itemToDelete) {
+        await sportService.deleteSport(idsToDelete[0]);
+      } else {
+        await sportService.deleteBatchSports(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadSports();
     } catch (e) {
-      console.error('Erreur lors de la suppression:', e.response?.data);
-      let errorMessage = 'Erreur lors de la suppression.';
-      
-      // Gérer les messages d'erreur spécifiques
-      if (e.response?.data?.detail) {
-        if (e.response.data.detail.includes('Aucun sport disponible')) {
-          errorMessage = 'Aucun sport n\'est disponible dans la base de données.';
-        } else if (e.response.data.detail.includes('non trouvé')) {
-          errorMessage = `Sport non trouvé: ${e.response.data.detail}`;
-        } else {
-          errorMessage = e.response.data.detail;
-        }
-      } else if (e.message) {
-        errorMessage = e.message;
-      }
-      
-      setError('Erreur: ' + errorMessage);
+      setError('Erreur lors de la suppression.');
     } finally {
       setDeleteModalOpen(false);
       setItemToDelete(null);
@@ -382,6 +365,14 @@ export default function Sports() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
 
         <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Sport' : 'Nouveau Sport'}>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -587,6 +578,9 @@ export default function Sports() {
               data={sports}
               actions={actions}
               onRowClick={handleRowClick}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
             <Pagination
               currentPage={currentPage}
@@ -605,8 +599,11 @@ export default function Sports() {
       {/* Modal de confirmation de suppression */}
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Supprimer le sport"
-        message="Êtes-vous sûr de vouloir supprimer ce sport ? Cette action est irréversible."
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         onConfirm={confirmDelete}

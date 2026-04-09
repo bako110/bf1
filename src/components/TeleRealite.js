@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchTeleRealite, createTeleRealite, updateTeleRealite, deleteTeleRealite } from '../services/teleRealiteService';
+import { fetchTeleRealite, createTeleRealite, updateTeleRealite, deleteTeleRealite, deleteBatchTeleRealite } from '../services/teleRealiteService';
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -40,6 +40,7 @@ export default function TeleRealite() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -204,12 +205,23 @@ export default function TeleRealite() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
     try {
-      await deleteTeleRealite(id);
-      setSuccess('Élément supprimé.');
+      if (itemToDelete) {
+        await deleteTeleRealite(idsToDelete[0]);
+      } else {
+        await deleteBatchTeleRealite(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadItems();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -359,6 +371,14 @@ export default function TeleRealite() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
 
         {items.length > 0 && currentPage < totalPages && (
           <div className="flex justify-center mb-6">
@@ -565,7 +585,7 @@ export default function TeleRealite() {
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable columns={columns} data={items} actions={actions} onRowClick={handleRowClick} />
+            <DataTable columns={columns} data={items} actions={actions} onRowClick={handleRowClick} selectable selectedIds={selectedIds} onSelectionChange={setSelectedIds} />
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -584,8 +604,11 @@ export default function TeleRealite() {
         isOpen={deleteModalOpen}
         onClose={() => { setDeleteModalOpen(false); setItemToDelete(null); }}
         onConfirm={confirmDelete}
-        title="Supprimer l'élément"
-        message={`Êtes-vous sûr de vouloir supprimer "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

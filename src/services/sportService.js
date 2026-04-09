@@ -76,6 +76,15 @@ const sportService = {
     }
   },
 
+  // Supprimer plusieurs sports en lot
+  deleteBatchSports: async (ids) => {
+    const token = localStorage.getItem('admin_token');
+    const response = await axios.post(`${API_BASE_URL}/sports/delete-batch`, { ids }, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+    });
+    return response.data;
+  },
+
   // Récupérer les sports en vedette
   getFeaturedSports: async (limit = 10) => {
     try {

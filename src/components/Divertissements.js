@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchDivertissements, createDivertissement, updateDivertissement, deleteDivertissement } from '../services/divertissementService';
+import { fetchDivertissements, createDivertissement, updateDivertissement, deleteDivertissement, deleteBatchDivertissements } from '../services/divertissementService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -46,6 +46,7 @@ export default function Divertissements() {
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [categories, setCategories] = useState([]);
 
   // États pour la vue détaillée
@@ -192,14 +193,25 @@ export default function Divertissements() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
     setError('');
     setSuccess('');
     try {
-      await deleteDivertissement(id);
-      setSuccess('Divertissement supprimé.');
+      if (itemToDelete) {
+        await deleteDivertissement(idsToDelete[0]);
+      } else {
+        await deleteBatchDivertissements(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadDivertissements();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -332,6 +344,14 @@ export default function Divertissements() {
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
 
         {/* Bouton charger plus */}
         {items.length > 0 && currentPage < totalPages && (
@@ -544,7 +564,10 @@ export default function Divertissements() {
               columns={columns} 
               data={items} 
               actions={actions} 
-              onRowClick={handleRowClick} 
+              onRowClick={handleRowClick}
+              selectable
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
             />
             
             {/* Pagination */}
@@ -570,8 +593,11 @@ export default function Divertissements() {
           setItemToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Supprimer le Divertissement"
-        message={`Êtes-vous sûr de vouloir supprimer le divertissement "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        title="Supprimer"
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+          : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"

@@ -21,3 +21,8 @@ export async function deleteTeleRealite(id) {
   const response = await api.delete(`/tele-realite/${id}`);
   return response.data;
 }
+
+export async function deleteBatchTeleRealite(ids) {
+  const res = await api.post('/tele-realite/delete-batch', { ids });
+  return res.data;
+}

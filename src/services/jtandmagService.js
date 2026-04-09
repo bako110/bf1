@@ -75,6 +75,14 @@ export const deleteJTandMag = async (id) => {
   }
 };
 
+export const deleteBatchJTandMag = async (ids) => {
+  const token = localStorage.getItem('admin_token');
+  const response = await axios.post(`${API_BASE_URL}/jtandmag/delete-batch`, { ids }, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  });
+  return response.data;
+};
+
 // Récupérer les JT et Magazines en vedette
 export const getFeaturedJTandMag = async (limit = 10) => {
   try {

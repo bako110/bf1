@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   getCarouselAdmin,
   createCarouselItem,
   updateCarouselItem,
   updateCarouselImage,
   deleteCarouselItem,
+  deleteBatchCarousel,
 } from '../services/carouselService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -31,6 +32,7 @@ export default function Carousel() {
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => { loadItems(); }, []);
 
@@ -117,13 +119,24 @@ export default function Carousel() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id || itemToDelete._id] : selectedIds;
+    if (!idsToDelete.length) return;
     setError('');
     try {
-      await deleteCarouselItem(id);
-      setSuccess('Slide supprimée avec succès.');
+      if (itemToDelete) {
+        await deleteCarouselItem(idsToDelete[0]);
+      } else {
+        await deleteBatchCarousel(idsToDelete);
+      }
+      const count = idsToDelete.length;
+      setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
+      setSelectedIds([]);
       loadItems();
     } catch (e) {
       setError(e?.response?.data?.detail || 'Erreur lors de la suppression.');
@@ -232,6 +245,14 @@ export default function Carousel() {
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
 
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">{selectedIds.length} element{selectedIds.length > 1 ? 's' : ''} selectionne{selectedIds.length > 1 ? 's' : ''}</span>
+            <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Supprimer la selection</button>
+            <button onClick={() => setSelectedIds([])} className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors">Annuler</button>
+          </div>
+        )}
+
         <Drawer
           isOpen={isDrawerOpen}
           onClose={handleClose}
@@ -325,7 +346,7 @@ export default function Carousel() {
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable columns={columns} data={items} actions={actions} />
+            <DataTable columns={columns} data={items} actions={actions} selectable selectedIds={selectedIds} onSelectionChange={setSelectedIds} />
           </div>
         )}
 
@@ -333,8 +354,11 @@ export default function Carousel() {
           isOpen={deleteModalOpen}
           onClose={() => { setDeleteModalOpen(false); setItemToDelete(null); }}
           onConfirm={confirmDelete}
-          title="Supprimer la slide"
-          message={`Êtes-vous sûr de vouloir supprimer la slide "${itemToDelete?.title}" ? Cette action est irréversible.`}
+          title="Supprimer"
+          message={itemToDelete
+            ? `Supprimer "${itemToDelete.title}" ? Cette action est irreversible.`
+            : `Supprimer ${selectedIds.length} element${selectedIds.length > 1 ? 's' : ''} ? Cette action est irreversible.`
+          }
           confirmText="Supprimer"
           type="danger"
         />

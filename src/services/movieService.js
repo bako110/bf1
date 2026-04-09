@@ -36,3 +36,8 @@ export async function deleteMovie(id) {
   const res = await api.delete(`/movies/${id}`);
   return res.data;
 }
+
+export async function deleteBatchMovies(ids) {
+  const res = await api.post('/movies/delete-batch', { ids });
+  return res.data;
+}

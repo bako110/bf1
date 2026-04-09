@@ -20,6 +20,11 @@ export async function deleteUser(id) {
   return res.data;
 }
 
+export async function deleteBatchUsers(ids) {
+  const res = await api.post('/users/delete-batch', { ids });
+  return res.data;
+}
+
 export async function getCurrentUser() {
   const res = await api.get('/users/me');
   return res.data;
