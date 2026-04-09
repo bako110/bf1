@@ -21,6 +21,7 @@ import Divertissements from './components/Divertissements';
 import Reels from './components/Reels';
 import Reportages from './components/Reportages';
 import JTandMag from './components/JTandMag';
+import Magazine from './components/Magazine';
 import Favorites from './components/Favorites';
 import Notifications from './components/Notifications';
 import Likes from './components/Likes';
@@ -83,6 +84,7 @@ function App() {
           {section === 'reel' && <Reels />}
           {section === 'divertissement' && <Divertissements />}
           {section === 'jtandmag' && <JTandMag />}
+          {section === 'magazine' && <Magazine />}
           {section === 'subscriptions' && <SubscriptionsScreen />}
           {section === 'favorites' && <Favorites />}
           {section === 'comments' && <Comments />}

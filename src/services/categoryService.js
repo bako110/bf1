@@ -2,7 +2,8 @@ import api from '../config/api';
 
 const SECTIONS = [
   { key: 'flash_infos',    label: 'Flash Infos' },
-  { key: 'jtandmag',       label: 'JT et Mag' },
+  { key: 'jtandmag',       label: 'Journal' },
+  { key: 'magazine',       label: 'Magazine' },
   { key: 'reportage',      label: 'Reportages' },
   { key: 'divertissement', label: 'Divertissement et Mag' },
   { key: 'sport',          label: 'Sport' },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { fetchJTandMag, createJTandMag, updateJTandMag, deleteJTandMag, deleteBatchJTandMag } from '../services/jtandmagService';
-import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
+import { fetchMagazine, createMagazine, updateMagazine, deleteMagazine, deleteBatchMagazine } from '../services/magazineService';
+import { uploadVideo } from '../services/uploadService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -17,7 +17,7 @@ import ConfirmModal from './ui/ConfirmModal';
 import DetailView from './ui/DetailView';
 import { fetchCategories } from '../services/categoryService';
 
-export default function JTandMag() {
+export default function Magazine() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,20 +54,20 @@ export default function JTandMag() {
   const [selectedItem, setSelectedItem] = useState(null);
   
   useEffect(() => {
-    loadJTandMag();
+    loadMagazine();
     loadCategories();
   }, []);
 
   async function loadCategories() {
     try {
-      const data = await fetchCategories('jtandmag', false);
+      const data = await fetchCategories('magazine', false);
       setCategories(data || []);
     } catch (e) {
       console.error('Erreur chargement catégories:', e);
     }
   }
 
-  async function loadJTandMag(page = 1, append = false) {
+  async function loadMagazine(page = 1, append = false) {
     if (!append) {
       setLoading(true);
     } else {
@@ -75,7 +75,7 @@ export default function JTandMag() {
     }
     setError('');
     try {
-      const data = await fetchJTandMag(page, itemsPerPage);
+      const data = await fetchMagazine(page, itemsPerPage);
       if (append) {
         setItems(prev => [...prev, ...data.items]);
       } else {
@@ -85,7 +85,7 @@ export default function JTandMag() {
       setTotalPages(Math.ceil((data.total || 0) / itemsPerPage) || 1);
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des Journaux.');
+      setError('Erreur lors du chargement des Magazines.');
     }
     setLoading(false);
     setPaginationLoading(false);
@@ -94,12 +94,12 @@ export default function JTandMag() {
   
   // Handlers de pagination
   const handlePageChange = (page) => {
-    loadJTandMag(page);
+    loadMagazine(page);
   };
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
-      loadJTandMag(currentPage + 1, true);
+      loadMagazine(currentPage + 1, true);
     }
   };
 
@@ -113,12 +113,10 @@ export default function JTandMag() {
     setError('');
     
     try {
-      // Utilisation du service d'upload vidéo avec callback de progression
       const response = await uploadVideo(file, (progress) => {
         setUploadVideoProgress(progress);
       });
       
-      // Récupération de l'URL depuis la réponse
       const videoUrl = response.data?.url || response.data?.secure_url || response.url;
       setForm(prev => ({...prev, video_url: videoUrl}));
       
@@ -155,14 +153,14 @@ export default function JTandMag() {
       };
       
       if (editId) {
-        await updateJTandMag(editId, payload);
-        setSuccess('Journal modifié avec succès.');
+        await updateMagazine(editId, payload);
+        setSuccess('Magazine modifié avec succès.');
       } else {
-        await createJTandMag(payload);
-        setSuccess('Journal créé avec succès.');
+        await createMagazine(payload);
+        setSuccess('Magazine créé avec succès.');
       }
       handleClose();
-      loadJTandMag();
+      loadMagazine();
     } catch (e) {
       setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
     } finally {
@@ -185,14 +183,14 @@ export default function JTandMag() {
     if (!idsToDelete.length) return;
     try {
       if (itemToDelete) {
-        await deleteJTandMag(idsToDelete[0]);
+        await deleteMagazine(idsToDelete[0]);
       } else {
-        await deleteBatchJTandMag(idsToDelete);
+        await deleteBatchMagazine(idsToDelete);
       }
       const count = idsToDelete.length;
       setSuccess(`${count} element${count > 1 ? 's supprime(s)' : ' supprime'}.`);
       setSelectedIds([]);
-      loadJTandMag();
+      loadMagazine();
     } catch (e) {
       setError('Erreur lors de la suppression.');
     } finally {
@@ -206,9 +204,9 @@ export default function JTandMag() {
     const newStatus = !item.allow_comments;
     
     try {
-      await updateJTandMag(itemId, { allow_comments: newStatus });
+      await updateMagazine(itemId, { allow_comments: newStatus });
       setSuccess(`Commentaires ${newStatus ? 'activés' : 'désactivés'} avec succès.`);
-      loadJTandMag();
+      loadMagazine();
     } catch (e) {
       setError('Erreur lors de la modification des commentaires.');
     }
@@ -312,14 +310,14 @@ export default function JTandMag() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         <PageHeader 
-          title="Gestion des Journaux"
-          description="Gérer les journaux télévisés"
+          title="Gestion des Magazines"
+          description="Gérer les magazines"
           action={
             <Button 
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
-              + Nouveau Journal
+              + Nouveau Magazine
             </Button>
           }
         />
@@ -350,24 +348,24 @@ export default function JTandMag() {
                 </>
               ) : (
                 <>
-                  Charger plus d'émissions ({items.length}/{totalItems})
+                  Charger plus de magazines ({items.length}/{totalItems})
                 </>
               )}
             </button>
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Journal' : 'Nouveau Journal'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editId ? 'Modifier le Magazine' : 'Nouveau Magazine'}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
               <p className="text-sm text-yellow-800">
-                <strong>Astuce :</strong> Ajoutez les journaux télévisés les plus populaires du moment.
+                <strong>Astuce :</strong> Ajoutez les magazines les plus populaires du moment.
               </p>
             </div>
 
             <FormInput
-              label="Titre du Journal"
-              placeholder="Journal de 20H"
+              label="Titre du Magazine"
+              placeholder="Magazine hebdomadaire"
               value={form.title}
               onChange={e => setForm({...form, title: e.target.value})}
               required
@@ -391,11 +389,11 @@ export default function JTandMag() {
             />
 
             <ImageUpload
-              label="Image du Journal"
+              label="Image du Magazine"
               value={form.image}
               onChange={(url) => setForm({...form, image: url})}
               disabled={submitting}
-              helperText="Sélectionnez une image pour le Journal (JPG, PNG, GIF, WebP - max 5MB)"
+              helperText="Sélectionnez une image pour le Magazine (JPG, PNG, GIF, WebP - max 5MB)"
             />
 
             {/* Choix source vidéo */}
@@ -494,7 +492,7 @@ export default function JTandMag() {
 
             <FormTextarea
               label="Description"
-              placeholder="Description de l'émission..."
+              placeholder="Description du magazine..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
@@ -515,8 +513,8 @@ export default function JTandMag() {
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-6">
-                Cochez cette case si vous ne voulez pas autoriser les commentaires sur cette émission.
-                Les utilisateurs pourront voir l'émission mais ne pourront pas commenter.
+                Cochez cette case si vous ne voulez pas autoriser les commentaires sur ce magazine.
+                Les utilisateurs pourront voir le magazine mais ne pourront pas commenter.
               </p>
             </div>
 
@@ -553,12 +551,12 @@ export default function JTandMag() {
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des journaux..." />
+          <Loader size="lg" text="Chargement des magazines..." />
         ) : items.length === 0 ? (
           <EmptyState 
             icon=""
-            title="Aucune émission"
-            message="Créez votre première émission pour la voir apparaître ici."
+            title="Aucun magazine"
+            message="Créez votre premier magazine pour le voir apparaître ici."
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -613,7 +611,7 @@ export default function JTandMag() {
             setShowDetailView(false);
             setSelectedItem(null);
           }}
-          title="Détails de l'émission"
+          title="Détails du magazine"
         >
           <DetailView
             title={selectedItem.title}

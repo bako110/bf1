@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LiveRecordingControl from '../components/LiveRecordingControl';
 
 const LiveControlScreen = () => {
-  const [streamUrl, setStreamUrl] = useState('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
+  const [streamUrl, setStreamUrl] = useState('https://geo.dailymotion.com/player/xtv3w.html?video=xa4kdv6');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

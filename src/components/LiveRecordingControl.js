@@ -6,6 +6,12 @@ const isYouTubeUrl = (url) => {
   return url.includes('youtube.com') || url.includes('youtu.be');
 };
 
+// Fonction pour détecter si c'est un lien Dailymotion
+const isDailymotionUrl = (url) => {
+  if (!url) return false;
+  return url.includes('dailymotion.com');
+};
+
 // Fonction pour extraire l'ID YouTube
 const extractYouTubeId = (url) => {
   if (!url) return null;
@@ -29,8 +35,9 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
   const [elapsedTime, setElapsedTime] = useState(0);
   const [successMessage, setSuccessMessage] = useState(null);
   
-  // Détecter si c'est YouTube
+  // Détecter si c'est YouTube ou Dailymotion
   const isYouTube = isYouTubeUrl(streamUrl);
+  const isDailymotion = isDailymotionUrl(streamUrl);
   const youtubeId = isYouTube ? extractYouTubeId(streamUrl) : null;
   
   // Refs pour MediaRecorder
@@ -231,6 +238,15 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               title="YouTube Live Stream"
+            />
+          ) : isDailymotion ? (
+            <iframe
+              ref={videoRef}
+              src={streamUrl}
+              className="absolute top-0 left-0 w-full h-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title="Dailymotion Live Stream"
             />
           ) : (
             <video
