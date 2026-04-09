@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { fetchPushNotifications, createPushNotification, updatePushNotification, deletePushNotification } from '../services/notificationService';
+﻿import React, { useEffect, useState } from 'react';
+import api from '../config/api';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';
-import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
@@ -12,21 +11,22 @@ import EmptyState from './ui/EmptyState';
 import Pagination from './ui/Pagination';
 import ConfirmModal from './ui/ConfirmModal';
 
+const CATEGORIES = [
+  { value: 'info',    label: 'Information generale' },
+  { value: 'promo',   label: 'Promotion / Offre' },
+  { value: 'news',    label: 'Actualite' },
+  { value: 'program', label: 'Programme TV' },
+  { value: 'admin',   label: 'Message Admin' },
+];
+
 export default function Notifications() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({
-    title: '',
-    message: '',
-    program_type: 'journal_13h30', // journal_13h30, journal_20h, all_programs
-    scheduled_time: '',
-    is_active: true,
-    target_audience: 'all' // all, premium, free
-  });
-  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ title: '', message: '', category: 'info' });
+  const [editItem, setEditItem] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -35,38 +35,35 @@ export default function Notifications() {
   const itemsPerPage = 20;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     loadNotifications();
   }, []);
 
   async function loadNotifications(page = 1, append = false) {
-    if (!append) {
-      setLoading(true);
-    } else {
-      setPaginationLoading(true);
-    }
+    if (!append) setLoading(true);
+    else setPaginationLoading(true);
     setError('');
     try {
-      const data = await fetchPushNotifications(page, itemsPerPage);
+      const res = await api.get(`/notifications/admin/all?page=${page}&limit=${itemsPerPage}`);
+      const data = res.data;
       if (append) {
         setItems(prev => [...prev, ...data.items]);
       } else {
-        setItems(data.items || data);
+        setItems(data.items || []);
       }
-      setTotalItems(data.total || data.length);
-      setTotalPages(data.totalPages || Math.ceil((data.total || data.length) / itemsPerPage));
+      setTotalItems(data.total || 0);
+      setTotalPages(data.totalPages || 1);
       setCurrentPage(page);
     } catch (e) {
-      setError('Erreur lors du chargement des notifications push.');
+      setError("Erreur lors du chargement des notifications.");
     }
     setLoading(false);
     setPaginationLoading(false);
   }
 
-  const handlePageChange = (page) => {
-    loadNotifications(page);
-  };
+  const handlePageChange = (page) => loadNotifications(page);
 
   const handleLoadMore = () => {
     if (currentPage < totalPages && !paginationLoading) {
@@ -76,25 +73,50 @@ export default function Notifications() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!form.title.trim() || !form.message.trim()) {
+      setError('Le titre et le message sont obligatoires.');
+      return;
+    }
     setError('');
     setSuccess('');
     setSubmitting(true);
-    
     try {
-      if (editId) {
-        await updatePushNotification(editId, form);
-        setSuccess('Notification push modifiée avec succès.');
+      if (editItem) {
+        await api.put('/notifications/admin/update', {
+          id: editItem.id,
+          title: form.title.trim(),
+          message: form.message.trim(),
+          category: form.category,
+        });
+        setSuccess('Notification modifiee avec succes.');
       } else {
-        await createPushNotification(form);
-        setSuccess('Notification push créée avec succès.');
+        const res = await api.post('/notifications/admin/global', {
+          title: form.title.trim(),
+          message: form.message.trim(),
+          category: form.category,
+        });
+        const count = res.data?.sent_to ?? 0;
+        setSuccess(`Notification envoyee a ${count} utilisateur${count > 1 ? 's' : ''}.`);
       }
-      handleCloseDrawer();
+      handleClose();
       loadNotifications();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError("Erreur : " + (e.response?.data?.detail || e.message));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleEdit(item) {
+    setForm({
+      title: item.title || '',
+      message: item.message || '',
+      category: item.category || 'info',
+    });
+    setEditItem(item);
+    setIsDrawerOpen(true);
+    setError('');
+    setSuccess('');
   }
 
   function handleDelete(item) {
@@ -102,12 +124,19 @@ export default function Notifications() {
     setDeleteModalOpen(true);
   }
 
+  function handleBulkDelete() {
+    setItemToDelete(null);
+    setDeleteModalOpen(true);
+  }
+
   async function confirmDelete() {
-    if (!itemToDelete) return;
-    const id = itemToDelete.id || itemToDelete._id;
+    const idsToDelete = itemToDelete ? [itemToDelete.id] : selectedIds;
+    if (!idsToDelete.length) return;
     try {
-      await deletePushNotification(id);
-      setSuccess('Notification push supprimée avec succès.');
+      await api.post('/notifications/admin/delete-batch', { ids: idsToDelete });
+      const count = idsToDelete.length;
+      setSuccess(`${count} notification${count > 1 ? 's supprimees' : ' supprimee'}.`);
+      setSelectedIds([]);
       loadNotifications();
     } catch (e) {
       setError('Erreur lors de la suppression.');
@@ -117,123 +146,108 @@ export default function Notifications() {
     }
   }
 
-  function handleEdit(notification) {
-    setForm({
-      title: notification.title || '',
-      message: notification.message || '',
-      program_type: notification.program_type || 'journal_13h30',
-      scheduled_time: notification.scheduled_time || '',
-      is_active: notification.is_active !== undefined ? notification.is_active : true,
-      target_audience: notification.target_audience || 'all'
-    });
-    setEditId(notification.id || notification._id);
-    setIsDrawerOpen(true);
-  }
-
-  function handleCloseDrawer() {
+  function handleClose() {
     setIsDrawerOpen(false);
-    setEditId(null);
-    setForm({
-      title: '',
-      message: '',
-      program_type: 'journal_13h30',
-      scheduled_time: '',
-      is_active: true,
-      target_audience: 'all'
-    });
+    setEditItem(null);
+    setForm({ title: '', message: '', category: 'info' });
     setError('');
   }
 
-  function toggleNotificationStatus(notification) {
-    const updatedNotification = {
-      ...notification,
-      is_active: !notification.is_active
-    };
-    handleEdit(updatedNotification);
-    handleSubmit(new Event('submit'));
+  function toggleSelect(id) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.length === items.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(items.map(i => i.id));
+    }
   }
 
   const columns = [
-    { key: 'title', label: 'Titre' },
-    { 
-      key: 'message', 
+    {
+      key: 'title',
+      label: 'Titre',
+      render: (val) => (
+        <span className="font-medium text-gray-900">{val || '-'}</span>
+      )
+    },
+    {
+      key: 'message',
       label: 'Message',
       render: (val) => {
         const str = String(val || '');
-        return str.length > 50 ? str.substring(0, 50) + '...' : str;
+        return str.length > 60 ? str.substring(0, 60) + '...' : str;
       }
     },
-    { 
-      key: 'program_type', 
-      label: 'Programme',
+    {
+      key: 'category',
+      label: 'Categorie',
       render: (val) => {
-        const types = {
-          'journal_13h30': ' Journal 13H30',
-          'journal_20h': ' Journal 20H',
-          'all_programs': ' Tous les programmes'
-        };
-        return types[val] || val;
+        const cat = CATEGORIES.find(c => c.value === val);
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {cat ? cat.label : val}
+          </span>
+        );
       }
     },
-    { 
-      key: 'scheduled_time', 
-      label: 'Heure programmée',
-      render: (val) => val ? new Date(val).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-'
+    {
+      key: 'recipients',
+      label: 'Destinataires',
+      render: (val) => (
+        <span className="font-semibold text-gray-900">{val || 0}</span>
+      )
     },
-    { 
-      key: 'target_audience', 
-      label: 'Audience',
-      render: (val) => {
-        const audiences = {
-          'all': ' Tous',
-          'premium': ' Premium',
-          'free': ' Gratuit'
-        };
-        return audiences[val] || val;
-      }
+    {
+      key: 'created_at',
+      label: 'Date',
+      render: (val) => val ? new Date(val).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'
     },
-    { 
-      key: 'is_active', 
-      label: 'Statut',
-      render: (val) => val ? ' Active' : ' Inactive'
-    },
-    { 
-      key: 'created_at', 
-      label: 'Créée le',
-      render: (val) => new Date(val).toLocaleDateString('fr-FR')
-    }
   ];
 
   const actions = [
     { label: 'Modifier', onClick: handleEdit, className: 'text-blue-600 hover:text-blue-800 font-medium text-sm' },
-    { 
-      label: notification => notification.is_active ? 'Désactiver' : 'Activer', 
-      onClick: toggleNotificationStatus, 
-      className: notification => notification.is_active ? 'text-orange-600 hover:text-orange-800 font-medium text-sm' : 'text-green-600 hover:text-green-800 font-medium text-sm'
-    },
-    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' }
+    { label: 'Supprimer', onClick: handleDelete, className: 'text-red-600 hover:text-red-800 font-medium text-sm' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <PageHeader 
-          title=" Notifications Push Mobile"
-          description="Gérer les notifications push pour les journaux et programmes mobiles"
+        <PageHeader
+          title="Notifications Push"
+          description="Envoyer et gerer les notifications aux utilisateurs"
           action={
-            <Button 
-              onClick={() => setIsDrawerOpen(true)}
-              variant="primary"
-            >
+            <Button onClick={() => setIsDrawerOpen(true)} variant="primary">
               + Nouvelle Notification
             </Button>
           }
         />
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
-        {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}
+        {success && <Alert type="success" title="Succes" message={success} onClose={() => setSuccess('')} />}
 
-        {/* Bouton charger plus */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-medium text-red-800">
+              {selectedIds.length} notification{selectedIds.length > 1 ? 's' : ''} selectionnee{selectedIds.length > 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Supprimer la selection
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        )}
+
         {items.length > 0 && currentPage < totalPages && (
           <div className="flex justify-center mb-6">
             <button
@@ -247,141 +261,118 @@ export default function Notifications() {
                   Chargement...
                 </>
               ) : (
-                <>
-                  Charger plus de notifications ({items.length}/{totalItems})
-                </>
+                <>Charger plus ({items.length}/{totalItems})</>
               )}
             </button>
           </div>
         )}
 
-        <Drawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} title={editId ? ' Modifier la Notification' : ' Nouvelle Notification Push'}>
+        <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={editItem ? 'Modifier la Notification' : 'Nouvelle Notification'}>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-              <p className="text-sm text-blue-800">
-                <strong> Astuce :</strong> Configurez les notifications push pour les journaux de 13H30 et 20H, ou pour tous les programmes mobiles.
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Attention :</strong> {editItem ? 'La modification sera appliquee a toutes les copies.' : 'La notification sera envoyee a tous les utilisateurs.'}
               </p>
             </div>
 
             <FormInput
-              label="Titre de la Notification"
-              placeholder=" Journal 13H30 disponible !"
+              label="Titre"
+              placeholder="ex: Nouvelle emission disponible"
               value={form.title}
-              onChange={e => setForm({...form, title: e.target.value})}
+              onChange={e => setForm({ ...form, title: e.target.value })}
               required
             />
 
             <FormTextarea
-              label="Message de la Notification"
-              placeholder="Ne manquez pas le journal de 13H30 avec toute l'actualité de la journée..."
+              label="Message"
+              placeholder="Contenu de la notification..."
               value={form.message}
-              onChange={e => setForm({...form, message: e.target.value})}
-              rows={3}
+              onChange={e => setForm({ ...form, message: e.target.value })}
+              rows={4}
               required
             />
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Type de Programme <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Categorie</label>
               <select
-                value={form.program_type}
-                onChange={e => setForm({...form, program_type: e.target.value})}
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                required
               >
-                <option value="journal_13h30"> Journal 13H30</option>
-                <option value="journal_20h"> Journal 20H</option>
-                <option value="all_programs"> Tous les programmes</option>
+                {CATEGORIES.map(c => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput
-                label="Heure Programmée"
-                type="time"
-                value={form.scheduled_time}
-                onChange={e => setForm({...form, scheduled_time: e.target.value})}
-                helperText="Heure d'envoi automatique"
-              />
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Audience Cible <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={form.target_audience}
-                  onChange={e => setForm({...form, target_audience: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                  required
-                >
-                  <option value="all"> Tous les utilisateurs</option>
-                  <option value="premium"> Utilisateurs Premium</option>
-                  <option value="free"> Utilisateurs Gratuits</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <input 
-                type="checkbox" 
-                id="is_active"
-                checked={form.is_active} 
-                onChange={e => setForm({...form, is_active: e.target.checked})} 
-                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <label htmlFor="is_active" className="text-sm font-medium text-gray-700">� Activer cette notification push</label>
-            </div>
-
             <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <Button 
-                type="submit"
-                variant="primary"
-                fullWidth
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Enregistrement...
-                  </span>
-                ) : (
-                  editId ? ' Mettre à jour' : ' Créer la Notification'
-                )}
+              <Button type="submit" variant="primary" fullWidth disabled={submitting}>
+                {submitting ? 'Envoi...' : editItem ? 'Modifier' : 'Envoyer a tous'}
               </Button>
-              <Button 
-                type="button"
-                variant="ghost"
-                fullWidth
-                onClick={handleCloseDrawer}
-                disabled={submitting}
-              >
-                 Annuler
+              <Button type="button" variant="ghost" fullWidth onClick={handleClose} disabled={submitting}>
+                Annuler
               </Button>
             </div>
           </form>
         </Drawer>
 
         {loading ? (
-          <Loader size="lg" text="Chargement des notifications push..." />
+          <Loader size="lg" text="Chargement des notifications..." />
         ) : items.length === 0 ? (
-          <EmptyState 
-            icon=""
-            title="Aucune notification push"
-            message="Créez votre première notification push pour les journaux mobiles."
+          <EmptyState
+            title="Aucune notification"
+            message="Envoyez votre premiere notification aux utilisateurs."
           />
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <DataTable 
-              columns={columns}
-              data={items}
-              actions={actions}
-            />
-            
-            {/* Pagination */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-gray-200 bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={items.length > 0 && selectedIds.length === items.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
+                    {columns.map(col => (
+                      <th key={col.key} className="px-6 py-4 font-semibold text-gray-900">{col.label}</th>
+                    ))}
+                    <th className="px-6 py-4 font-semibold text-gray-900 w-12">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((row, idx) => (
+                    <tr key={row.id || idx} className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${selectedIds.includes(row.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(row.id)}
+                          onChange={() => toggleSelect(row.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      {columns.map(col => (
+                        <td key={col.key} className="px-6 py-4 text-gray-700">
+                          {col.render ? col.render(row[col.key], row) : (row[col.key] || '-')}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {actions.map((action, ai) => (
+                            <button key={ai} onClick={() => action.onClick(row)} className={action.className}>
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -396,16 +387,15 @@ export default function Notifications() {
         )}
       </div>
 
-      {/* Modal de confirmation de suppression */}
       <ConfirmModal
         isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setItemToDelete(null);
-        }}
+        onClose={() => { setDeleteModalOpen(false); setItemToDelete(null); }}
         onConfirm={confirmDelete}
         title="Supprimer la Notification"
-        message={`Êtes-vous sûr de vouloir supprimer la notification "${itemToDelete?.title}" ? Cette action est irréversible.`}
+        message={itemToDelete
+          ? `Supprimer "${itemToDelete.title}" ?`
+          : `Supprimer ${selectedIds.length} notification${selectedIds.length > 1 ? 's' : ''} ?`
+        }
         confirmText="Supprimer"
         cancelText="Annuler"
         type="danger"
