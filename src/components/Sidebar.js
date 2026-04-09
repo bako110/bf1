@@ -26,6 +26,7 @@ const sections = [
   // { label: 'Likes', key: 'likes' },
   // { label: 'Favoris', key: 'favorites' },
   { label: 'Messagerie', key: 'messages' },
+  { label: 'Notifications Push', key: 'notifications' },
   { label: 'Abonnements', key: 'submenu_subscriptions', isHeader: true },
   { label: 'Plans d\'Abonnement', key: 'subscriptionPlans' },
   { label: 'Abonnements Utilisateurs', key: 'subscriptions' },

@@ -22,7 +22,7 @@ import Reels from './components/Reels';
 import Reportages from './components/Reportages';
 import JTandMag from './components/JTandMag';
 import Favorites from './components/Favorites';
-// import Notifications from './components/Notifications';
+import Notifications from './components/Notifications';
 import Likes from './components/Likes';
 import Payments from './components/Payments';
 import Contact from './components/Contact';
@@ -86,7 +86,7 @@ function App() {
           {section === 'subscriptions' && <SubscriptionsScreen />}
           {section === 'favorites' && <Favorites />}
           {section === 'comments' && <Comments />}
-          {/* {section === 'notifications' && <Notifications />} */}
+          {section === 'notifications' && <Notifications />}
           {section === 'likes' && <Likes />}
           {section === 'payments' && <Payments />}
           {section === 'contact' && <Contact />}

@@ -30,6 +30,8 @@ export default function SubscriptionPlans() {
   const [success, setSuccess] = useState('');
   const [editingPlan, setEditingPlan] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [formPrice, setFormPrice] = useState('');
+  const [formOriginalPrice, setFormOriginalPrice] = useState('');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [initializing, setInitializing] = useState(false);
@@ -78,6 +80,9 @@ export default function SubscriptionPlans() {
 
   async function handleUpdatePrice(plan) {
     setEditingPlan(plan);
+    setFormPrice(plan.price_cents ? String(plan.price_cents / 100) : '');
+    setFormOriginalPrice(plan.original_price_cents ? String(plan.original_price_cents / 100) : '');
+    setError('');
     setIsDrawerOpen(true);
   }
 
@@ -87,8 +92,8 @@ export default function SubscriptionPlans() {
     setSuccess('');
     setSubmitting(true);
     
-    const formData = new FormData(e.target);
-    const newPrice = parseInt(formData.get('price'));
+    const newPrice = parseInt(formPrice);
+    const originalPrice = formOriginalPrice ? parseInt(formOriginalPrice) : null;
     
     if (isNaN(newPrice) || newPrice < 0) {
       setError('Prix invalide');
@@ -96,10 +101,13 @@ export default function SubscriptionPlans() {
       return;
     }
 
+    const patch = { price_cents: newPrice * 100 };
+    if (originalPrice !== null) {
+      patch.original_price_cents = originalPrice > 0 ? originalPrice * 100 : null;
+    }
+
     try {
-      await updateSubscriptionPlan(editingPlan.id || editingPlan._id, {
-        price_cents: newPrice * 100 // Convertir en centimes
-      });
+      await updateSubscriptionPlan(editingPlan.id || editingPlan._id, patch);
       setSuccess('Prix mis à jour avec succès.');
       handleClose();
       loadPlans();
@@ -149,6 +157,8 @@ export default function SubscriptionPlans() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditingPlan(null);
+    setFormPrice('');
+    setFormOriginalPrice('');
     setError('');
   }
 
@@ -228,20 +238,53 @@ export default function SubscriptionPlans() {
                         {categoryData.plans.map(plan => (
                           <div key={plan.id || plan._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
                             <div className="flex justify-between items-start mb-3">
-                              <div>
+                              <div className="flex-1">
                                 <div className="text-sm font-medium text-gray-500 mb-1">
                                   {plan.duration_months} mois
+                                  <span className="ml-2 text-xs text-gray-400 font-mono">({plan.code})</span>
                                 </div>
-                                <div className="text-2xl font-bold text-gray-900">
-                                  {formatPrice(plan.price_cents)}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {(plan.price_cents / 100 / plan.duration_months).toFixed(0)} XOF/mois
+
+                                {(() => {
+                                  const promo = plan.price_cents;
+                                  const orig = plan.original_price_cents;
+                                  const promoXof = Math.min(promo, orig || promo);
+                                  const origXof = orig ? Math.max(promo, orig) : null;
+                                  const hasPromo = orig && orig !== promo;
+                                  const pct = hasPromo ? Math.round((1 - promoXof / origXof) * 100) : 0;
+                                  return hasPromo ? (
+                                    <div className="mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-400 line-through">
+                                          {formatPrice(origXof)}
+                                        </span>
+                                        <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                                          -{pct}%
+                                        </span>
+                                      </div>
+                                      <div className="text-2xl font-bold text-red-600">
+                                        {formatPrice(promoXof)}
+                                      </div>
+                                      <div className="text-xs text-green-600 font-medium mt-0.5">
+                                        Économie : {formatPrice(origXof - promoXof)}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="mb-2">
+                                      <div className="text-2xl font-bold text-gray-900">
+                                        {formatPrice(promo)}
+                                      </div>
+                                      <div className="text-xs text-gray-400 mt-0.5">Pas de promo</div>
+                                    </div>
+                                  );
+                                })()}
+
+                                <div className="text-xs text-gray-500">
+                                  ≈ {(plan.price_cents / 100 / plan.duration_months).toFixed(0)} XOF/mois
                                 </div>
                               </div>
                               <button
                                 onClick={() => handleToggleActive(plan)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                className={`px-3 py-1 rounded-full text-xs font-medium ml-2 ${
                                   plan.is_active 
                                     ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -293,15 +336,32 @@ export default function SubscriptionPlans() {
           </div>
 
           <FormInput
-            label="Nouveau Prix (XOF)"
+            label="Prix promo / normal (XOF)"
             type="number"
             name="price"
-            placeholder="5000"
-            defaultValue={editingPlan ? editingPlan.price_cents / 100 : 0}
+            placeholder="1000"
+            value={formPrice}
+            onChange={e => setFormPrice(e.target.value)}
             required
             min="0"
-            helperText="Entrez le prix en francs XOF (sera automatiquement converti en centimes)"
+            helperText="Prix affiché à l'utilisateur (prix réel si pas de promo)"
           />
+
+          <FormInput
+            label="Prix original barré (XOF) — optionnel"
+            type="number"
+            name="original_price"
+            placeholder="2000"
+            value={formOriginalPrice}
+            onChange={e => setFormOriginalPrice(e.target.value)}
+            min="0"
+            helperText="Laissez vide pour supprimer la promo. Doit être supérieur au prix promo."
+          />
+
+          {/* Prévisualisation du % */}
+          <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+            ℹ️ Si vous mettez Prix = 800, Prix barré = 1000 &rarr; affiche « -20% · Économisez 200 FCFA » sur l'app mobile.
+          </div>
 
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <Button 

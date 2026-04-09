@@ -25,17 +25,20 @@ export default function Dashboard() {
         
         // Fallback avec des valeurs par défaut
         setStats({
-          users: { total: 0, growth: 0 },
-          sports: { total: 0, growth: 0 },
-          movies: { total: 0, growth: 0 },
-          reportages: { total: 0, growth: 0 },
-          reels: { total: 0, growth: 0 },
-          divertissements: { total: 0, growth: 0 },
-          programs: { total: 0, growth: 0 },
-          news: { total: 0, growth: 0 },
-          jtandmag: { total: 0, growth: 0 },
-          popularPrograms: { total: 0, growth: 0 },
-          subscriptions: { total: 0, growth: 0 },
+          users:          { total: 0, growth: 0 },
+          movies:         { total: 0, growth: 0 },
+          reportages:     { total: 0, growth: 0 },
+          reels:          { total: 0, growth: 0 },
+          divertissements:{ total: 0, growth: 0 },
+          programs:       { total: 0, growth: 0 },
+          news:           { total: 0, growth: 0 },
+          jtandmag:       { total: 0, growth: 0 },
+          subscriptions:  { total: 0, growth: 0 },
+          comments:       { total: 0, growth: 0 },
+          likes:          { total: 0, growth: 0 },
+          favorites:      { total: 0, growth: 0 },
+          sports:         { total: 0, growth: 0 },
+          tele_realite:   { total: 0, growth: 0 },
         });
       }
       setLoading(false);
@@ -44,17 +47,15 @@ export default function Dashboard() {
   }, []);
 
   const cardData = [
-    { key: 'users', label: 'Utilisateurs', color: 'blue' },
-    { key: 'sports', label: 'Sports', color: 'red' },
-    { key: 'movies', label: 'Films', color: 'purple' },
-    { key: 'reportages', label: 'Reportages', color: 'indigo' },
-    { key: 'reels', label: 'Reels', color: 'pink' },
-    { key: 'divertissements', label: 'Divertissements', color: 'orange' },
-    { key: 'programs', label: 'Programmes EPG', color: 'teal' },
-    { key: 'news', label: 'Breaking News', color: 'red' },
-    { key: 'jtandmag', label: 'JT et Magazines', color: 'yellow' },
-    { key: 'popularPrograms', label: 'Programmes Populaires', color: 'green' },
-    { key: 'subscriptions', label: 'Abonnements', color: 'green' },
+    { key: 'users',          label: 'Utilisateurs',     color: 'blue'   },
+    { key: 'sports',         label: 'Sports',           color: 'red'    },
+    { key: 'reportages',     label: 'Reportages',       color: 'indigo' },
+    { key: 'reels',          label: 'Reels',            color: 'pink'   },
+    { key: 'divertissements',label: 'Divertissements',  color: 'orange' },
+    { key: 'tele_realite',   label: 'Télé-réalité',     color: 'teal'   },
+    { key: 'programs',       label: 'Programmes EPG',   color: 'cyan'   },
+    { key: 'news',           label: 'Breaking News',    color: 'red'    },
+    { key: 'jtandmag',       label: 'JT & Magazines',   color: 'yellow' },
   ];
 
   const maxValue = stats ? Math.max(...Object.values(stats).map(s => s.total)) : 0;
