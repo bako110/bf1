@@ -22,15 +22,16 @@ export default function Divertissements() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ 
-    title: '', 
-    category: '', 
-    description: '', 
-    image: '', 
-    video_url: '', 
-    video_file: null, 
-    video_source: 'file', 
-    allow_comments: true 
+  const [form, setForm] = useState({
+    title: '',
+    category: '',
+    description: '',
+    image: '',
+    video_url: '',
+    video_file: null,
+    video_source: 'file',
+    allow_comments: true,
+    created_at: ''
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -151,7 +152,8 @@ export default function Divertissements() {
         description: form.description,
         image: form.image || null,
         video_url: form.video_url || null,
-        allow_comments: form.allow_comments
+        allow_comments: form.allow_comments,
+        ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
       };
       
       if (editId) {
@@ -179,9 +181,10 @@ export default function Divertissements() {
       description: '', 
       image: '', 
       video_url: '', 
-      video_file: null, 
-      video_source: 'file', 
-      allow_comments: true 
+      video_file: null,
+      video_source: 'file',
+      allow_comments: true,
+      created_at: ''
     });
     setError('');
     setUploadingVideo(false);
@@ -243,7 +246,8 @@ export default function Divertissements() {
       video_url: item.video_url || '',
       video_file: null,
       video_source: item.video_url ? 'url' : 'file',
-      allow_comments: item.allow_comments !== false
+      allow_comments: item.allow_comments !== false,
+      created_at: item.created_at ? new Date(item.created_at).toISOString().slice(0, 16) : ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -524,8 +528,19 @@ export default function Divertissements() {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de publication</label>
+              <input
+                type="datetime-local"
+                value={form.created_at}
+                onChange={e => setForm({...form, created_at: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">Modifie la date d'apparition dans les classements</p>
+            </div>
+
             <div className="flex gap-3 pt-2">
-              <Button 
+              <Button
                 type="submit" 
                 variant="primary" 
                 fullWidth

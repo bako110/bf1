@@ -7,7 +7,7 @@ export default function News() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ title: '', category: '', description: '', image: '', author: '' });
+  const [form, setForm] = useState({ title: '', category: '', description: '', image: '', author: '', created_at: '' });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -34,14 +34,18 @@ export default function News() {
     setError('');
     setSuccess('');
     try {
+      const payload = {
+        ...form,
+        ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
+      };
       if (editId) {
-        await updateNews(editId, form);
+        await updateNews(editId, payload);
         setSuccess('News modifiée avec succès.');
       } else {
-        await createNews(form);
+        await createNews(payload);
         setSuccess('News créée avec succès.');
       }
-      setForm({ title: '', category: '', description: '', image: '', author: '' });
+      setForm({ title: '', category: '', description: '', image: '', author: '', created_at: '' });
       setEditId(null);
       setIsDrawerOpen(false);
       loadNews();
@@ -87,7 +91,7 @@ export default function News() {
   }
 
   function handleEdit(n) {
-    setForm({ title: n.title, category: n.category || '', description: n.description || '', image: n.image || '', author: n.author || '' });
+    setForm({ title: n.title, category: n.category || '', description: n.description || '', image: n.image || '', author: n.author || '', created_at: n.created_at ? new Date(n.created_at).toISOString().slice(0, 16) : '' });
     setEditId(n.id);
     setIsDrawerOpen(true);
   }
@@ -95,7 +99,7 @@ export default function News() {
   function handleCloseDrawer() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ title: '', category: '', description: '', image: '', author: '' });
+    setForm({ title: '', category: '', description: '', image: '', author: '', created_at: '' });
   }
 
   return (
@@ -178,9 +182,20 @@ export default function News() {
                 className="w-full px-4 py-3 border border-gray-300 focus:border-black focus:ring-1 focus:ring-black outline-none transition-all" 
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de publication</label>
+              <input
+                type="datetime-local"
+                value={form.created_at}
+                onChange={e => setForm({...form, created_at: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">Modifie la date d'apparition dans les classements</p>
+            </div>
+
             <div className="flex gap-3 pt-4">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={imageUploading}
                 className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-colors"
               >

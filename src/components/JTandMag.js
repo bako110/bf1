@@ -24,17 +24,18 @@ export default function JTandMag() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoProgress, setUploadVideoProgress] = useState(0);
-  const [form, setForm] = useState({ 
-    title: '', 
-    category: '', 
-    image: '', 
-    video_url: '', 
-    video_file: null, 
-    video_source: 'url', 
-    description: '', 
-    host: '', 
-    allow_comments: true, 
-    rating: 0 
+  const [form, setForm] = useState({
+    title: '',
+    category: '',
+    image: '',
+    video_url: '',
+    video_file: null,
+    video_source: 'url',
+    description: '',
+    host: '',
+    allow_comments: true,
+    rating: 0,
+    created_at: ''
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -151,7 +152,8 @@ export default function JTandMag() {
         description: form.description,
         host: form.host,
         allow_comments: form.allow_comments,
-        rating: form.rating || 0
+        rating: form.rating || 0,
+        ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
       };
       
       if (editId) {
@@ -215,8 +217,8 @@ export default function JTandMag() {
   }
 
   function handleEdit(item) {
-    setForm({ 
-      title: item.title || '', 
+    setForm({
+      title: item.title || '',
       category: item.category || '',
       image: item.image || '',
       video_url: item.video_url || '',
@@ -225,7 +227,8 @@ export default function JTandMag() {
       description: item.description || '',
       host: item.host || '',
       allow_comments: item.allow_comments !== false,
-      rating: item.rating || 0
+      rating: item.rating || 0,
+      created_at: item.created_at ? new Date(item.created_at).toISOString().slice(0, 16) : ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -234,17 +237,18 @@ export default function JTandMag() {
   function handleClose() {
     setIsDrawerOpen(false);
     setEditId(null);
-    setForm({ 
-      title: '', 
-      category: '', 
-      image: '', 
-      video_url: '', 
-      video_file: null, 
-      video_source: 'url', 
-      description: '', 
-      host: '', 
+    setForm({
+      title: '',
+      category: '',
+      image: '',
+      video_url: '',
+      video_file: null,
+      video_source: 'url',
+      description: '',
+      host: '',
       allow_comments: true,
-      rating: 0 
+      rating: 0,
+      created_at: ''
     });
     setError('');
     setUploadingVideo(false);
@@ -518,10 +522,21 @@ export default function JTandMag() {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de publication</label>
+              <input
+                type="datetime-local"
+                value={form.created_at}
+                onChange={e => setForm({...form, created_at: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">Modifie la date d'apparition dans les classements</p>
+            </div>
+
             <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <Button 
-                type="submit" 
-                variant="primary" 
+              <Button
+                type="submit"
+                variant="primary"
                 fullWidth
                 disabled={submitting || uploadingVideo}
               >

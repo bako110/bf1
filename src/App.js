@@ -74,7 +74,7 @@ function App() {
       <div className="flex-1 ml-64">
         <Header onLogout={handleLogout} onSectionChange={setSection} />
         <main className="mt-16 p-6">
-          {section === 'dashboard' && <Dashboard />}
+          {section === 'dashboard' && <Dashboard onNavigate={setSection} />}
           {section === 'users' && <UsersScreen />}
           {section === 'teleRealite' && <TeleRealite />}
           {section === 'breakingNews' && <BreakingNews />}

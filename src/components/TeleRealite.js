@@ -34,6 +34,7 @@ export default function TeleRealite() {
     allow_comments: true,
     is_live: false,
     is_upcoming: false,
+    created_at: ''
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -182,6 +183,7 @@ export default function TeleRealite() {
         allow_comments: form.allow_comments,
         is_live: form.is_live,
         is_upcoming: form.is_upcoming,
+        ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
       };
 
       if (editId) {
@@ -257,6 +259,7 @@ export default function TeleRealite() {
       allow_comments: item.allow_comments !== false,
       is_live: item.is_live || false,
       is_upcoming: item.is_upcoming || false,
+      created_at: item.created_at ? new Date(item.created_at).toISOString().slice(0, 16) : ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -280,6 +283,7 @@ export default function TeleRealite() {
       allow_comments: true,
       is_live: false,
       is_upcoming: false,
+      created_at: ''
     });
     setError('');
     setUploading(false);
@@ -552,6 +556,17 @@ export default function TeleRealite() {
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700">Désactiver les commentaires</span>
               </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de publication</label>
+              <input
+                type="datetime-local"
+                value={form.created_at}
+                onChange={e => setForm({...form, created_at: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">Modifie la date d'apparition dans les classements</p>
             </div>
 
             <div className="flex gap-3 pt-4 border-t border-gray-200">

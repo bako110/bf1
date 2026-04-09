@@ -31,7 +31,8 @@ export default function Archives() {
     video_file: null,
     video_source: 'file',
     required_subscription_category: null,
-    archived_date: new Date().toISOString().split('T')[0]
+    archived_date: new Date().toISOString().split('T')[0],
+    created_at: ''
   });
   const [editId, setEditId] = useState(null);
   const [success, setSuccess] = useState('');
@@ -152,7 +153,8 @@ export default function Archives() {
         thumbnail: form.thumbnail || null,
         video_url: form.video_url || null,
         required_subscription_category: form.required_subscription_category || null,
-        archived_date: new Date(form.archived_date).toISOString()
+        archived_date: new Date(form.archived_date).toISOString(),
+        ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
       };
       
       if (editId) {
@@ -202,7 +204,8 @@ export default function Archives() {
       video_file: null,
       video_source: item.video_url ? 'url' : 'file',
       required_subscription_category: item.required_subscription_category || null,
-      archived_date: item.archived_date ? new Date(item.archived_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      archived_date: item.archived_date ? new Date(item.archived_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      created_at: item.created_at ? new Date(item.created_at).toISOString().slice(0, 16) : ''
     });
     setEditId(item.id || item._id);
     setIsDrawerOpen(true);
@@ -222,7 +225,8 @@ export default function Archives() {
       video_file: null,
       video_source: 'file',
       required_subscription_category: null,
-      archived_date: new Date().toISOString().split('T')[0]
+      archived_date: new Date().toISOString().split('T')[0],
+      created_at: ''
     });
     setError('');
     setUploadingVideo(false);
@@ -451,9 +455,20 @@ export default function Archives() {
               required
             />
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de publication</label>
+              <input
+                type="datetime-local"
+                value={form.created_at}
+                onChange={e => setForm({...form, created_at: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">Modifie la date d'apparition dans les classements</p>
+            </div>
+
             <div className="flex gap-3 pt-4">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 variant="primary"
                 disabled={submitting || uploadingVideo}
               >

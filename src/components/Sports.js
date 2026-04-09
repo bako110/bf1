@@ -51,7 +51,8 @@ export default function Sports() {
     is_new: false,
     category: 'sport',
     sport_type: '',
-    teams: []
+    teams: [],
+    created_at: ''
   });
 
   useEffect(() => {
@@ -139,7 +140,8 @@ export default function Sports() {
         tags: [],
         featured: false,
         is_new: form.is_new || false,
-        is_active: form.is_active !== false
+        is_active: form.is_active !== false,
+        ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
       };
       
       console.log(' Données envoyées au backend:', sportData);
@@ -180,7 +182,8 @@ export default function Sports() {
       is_new: false,
       category: 'sport',
       sport_type: '',
-      teams: []
+      teams: [],
+      created_at: ''
     });
     setError('');
     setSuccess('');
@@ -234,7 +237,8 @@ export default function Sports() {
       is_new: item.is_new || false,
       category: item.category || 'sport',
       sport_type: item.sport_type || '',
-      teams: item.teams || []
+      teams: item.teams || [],
+      created_at: item.created_at ? new Date(item.created_at).toISOString().slice(0, 16) : ''
     });
     const id = item.id || item._id; // Utiliser id ou _id
     console.log(' ID du sport à éditer:', id);
@@ -532,6 +536,17 @@ export default function Sports() {
                   </span>
                 </label>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de publication</label>
+              <input
+                type="datetime-local"
+                value={form.created_at}
+                onChange={e => setForm({...form, created_at: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+              />
+              <p className="text-xs text-gray-400 mt-1">Modifie la date d'apparition dans les classements</p>
             </div>
 
             <div className="flex gap-3 pt-2">

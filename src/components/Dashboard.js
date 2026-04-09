@@ -39,6 +39,9 @@ export default function Dashboard() {
           favorites:      { total: 0, growth: 0 },
           sports:         { total: 0, growth: 0 },
           tele_realite:   { total: 0, growth: 0 },
+          magazine:       { total: 0, growth: 0 },
+          archives:       { total: 0, growth: 0 },
+          missed:         { total: 0, growth: 0 },
         });
       }
       setLoading(false);
@@ -55,7 +58,10 @@ export default function Dashboard() {
     { key: 'tele_realite',   label: 'Télé-réalité',     color: 'teal'   },
     { key: 'programs',       label: 'Programmes EPG',   color: 'cyan'   },
     { key: 'news',           label: 'Breaking News',    color: 'red'    },
-    { key: 'jtandmag',       label: 'JT & Magazines',   color: 'yellow' },
+    { key: 'jtandmag',       label: 'Journal',          color: 'yellow' },
+    { key: 'magazine',       label: 'Magazine',         color: 'purple' },
+    { key: 'archives',       label: 'Archives',         color: 'gray'   },
+    { key: 'missed',         label: 'Vous l\'avez raté',color: 'green'  },
   ];
 
   const maxValue = stats ? Math.max(...Object.values(stats).map(s => s.total)) : 0;
