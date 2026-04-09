@@ -381,11 +381,10 @@ export default function Magazine() {
             />
 
             <FormInput
-              label="Animateur/Présentateur"
+              label="Animateur/Présentateur (optionnel)"
               placeholder="Nom de l'animateur"
               value={form.host}
               onChange={e => setForm({...form, host: e.target.value})}
-              required
             />
 
             <ImageUpload
@@ -491,12 +490,11 @@ export default function Magazine() {
             </div>
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description du magazine..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
-              required
             />
 
             {/* Option pour désactiver les commentaires */}

@@ -314,12 +314,11 @@ export default function Archives() {
             />
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description détaillée"
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
-              required
             />
 
             <FormSelect

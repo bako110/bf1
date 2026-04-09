@@ -66,9 +66,12 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
     
     try {
       // Sauvegarder le timestamp de début de la vidéo
-      if (videoRef.current) {
+      if (videoRef.current && typeof videoRef.current.currentTime === 'number') {
         setStartTimestamp(videoRef.current.currentTime);
         console.log(`Timestamp de début: ${videoRef.current.currentTime.toFixed(2)}s`);
+      } else {
+        setStartTimestamp(0);
+        console.log('Timestamp de début: 0s (currentTime non disponible)');
       }
       
       // Créer un enregistrement local simple
@@ -313,9 +316,9 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
           <p className="text-sm text-gray-600">Titre: {activeRecording.title}</p>
           <p className="text-sm text-gray-600">Démarré: {new Date(activeRecording.start_time).toLocaleString()}</p>
           <p className="text-sm text-gray-600">Durée: {formatTime(elapsedTime)}</p>
-          {startTimestamp !== null && videoRef.current && (
+          {startTimestamp !== null && (
             <p className="text-sm text-gray-600">
-              Segment: {startTimestamp.toFixed(1)}s → {videoRef.current.currentTime.toFixed(1)}s
+              Segment: {startTimestamp.toFixed(1)}s → {(videoRef.current && typeof videoRef.current.currentTime === 'number') ? videoRef.current.currentTime.toFixed(1) : '?'}s
             </p>
           )}
           <p className="text-sm text-gray-600">Statut: <span className="font-semibold">{activeRecording.status}</span></p>

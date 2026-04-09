@@ -347,12 +347,11 @@ export default function BreakingNews() {
               required
             />
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Contenu de l'actualité..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={6}
-              required
             />
             <ImageUpload
               label="Image de l'Actualité"

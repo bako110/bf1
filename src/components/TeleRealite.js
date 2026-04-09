@@ -534,12 +534,11 @@ export default function TeleRealite() {
             />
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description détaillée de l'émission ou de l'événement..."
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               rows={4}
-              required
             />
 
             {/* Options */}

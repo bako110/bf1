@@ -130,8 +130,8 @@ export default function Series() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!form.title.trim() || !form.description.trim()) {
-      setError('Le titre et la description sont requis.');
+    if (!form.title.trim()) {
+      setError('Le titre est requis.');
       return;
     }
 
@@ -495,10 +495,9 @@ export default function Series() {
             />
             
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              required
               rows={4}
               placeholder="Décrivez l'intrigue de votre série..."
             />

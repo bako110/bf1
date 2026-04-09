@@ -383,11 +383,10 @@ export default function JTandMag() {
             />
 
             <FormInput
-              label="Animateur/Présentateur"
+              label="Animateur/Présentateur (optionnel)"
               placeholder="Nom de l'animateur"
               value={form.host}
               onChange={e => setForm({...form, host: e.target.value})}
-              required
             />
 
             <ImageUpload
@@ -493,12 +492,11 @@ export default function JTandMag() {
             </div>
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description de l'émission..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
-              required
             />
 
             {/* Option pour désactiver les commentaires */}

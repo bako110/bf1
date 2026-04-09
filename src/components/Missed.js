@@ -567,12 +567,11 @@ export default function Missed() {
             />
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description détaillée du contenu..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
-              required
             />
 
             <FormInput

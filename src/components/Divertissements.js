@@ -395,12 +395,11 @@ export default function Divertissements() {
             />
             
             <FormTextarea 
-              label="Description" 
+              label="Description (optionnel)" 
               placeholder="Description ou contenu..." 
               value={form.description} 
               onChange={e => setForm({...form, description: e.target.value})} 
               rows={4} 
-              required 
             />
             
             {/* Sélecteur de source vidéo */}

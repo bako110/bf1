@@ -570,12 +570,11 @@ export default function Reportages() {
             />
 
             <FormTextarea
-              label="Description"
+              label="Description (optionnel)"
               placeholder="Description détaillée du reportage..."
               value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               rows={4}
-              required
             />
 
             {/* Option pour désactiver les commentaires */}
