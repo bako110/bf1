@@ -61,10 +61,10 @@ export default function Archives() {
 
   async function loadCategories() {
     try {
-      const data = await fetchCategories();
+      const data = await fetchCategories('archive', false);
       setCategories(data || []);
     } catch (e) {
-      console.error('Erreur chargement catégories:', e);
+      console.error('Erreur chargement catégories archives:', e);
     }
   }
 
@@ -77,11 +77,13 @@ export default function Archives() {
     setError('');
     try {
       const data = await fetchArchives(page, itemsPerPage);
+      const newItems = data.items || data;
       if (append) {
-        setItems(prev => [...prev, ...data.items]);
+        setItems(prev => [...prev, ...newItems]);
       } else {
-        setItems(data.items || data);
+        setItems(newItems);
       }
+
       setTotalItems(data.total || data.length);
       setTotalPages(Math.ceil((data.total || 0) / itemsPerPage) || 1);
       setCurrentPage(page);
@@ -148,12 +150,13 @@ export default function Archives() {
     try {
       const payload = {
         title: form.title,
-        description: form.description,
-        category: form.category,
+        description: form.description || null,
+        category: form.category || null,
         thumbnail: form.thumbnail || null,
         video_url: form.video_url || null,
+        // null explicite pour "Gratuit" — ne pas omettre le champ
         required_subscription_category: form.required_subscription_category || null,
-        archived_date: new Date(form.archived_date).toISOString(),
+        archived_date: form.archived_date ? new Date(form.archived_date).toISOString() : new Date().toISOString(),
         ...(form.created_at ? { created_at: new Date(form.created_at).toISOString() } : {})
       };
       
@@ -325,13 +328,34 @@ export default function Archives() {
               rows={4}
             />
 
-            <FormSelect
-              label="Catégorie"
-              value={form.category}
-              onChange={e => setForm({...form, category: e.target.value})}
-              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Catégorie
+              </label>
+              {categories.length > 0 ? (
+                <select
+                  value={form.category}
+                  onChange={e => setForm({...form, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                >
+                  <option value="">-- Sélectionner une catégorie --</option>
+                  {categories.map(cat => (
+                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={form.category}
+                    onChange={e => setForm({...form, category: e.target.value})}
+                    placeholder="Saisir une catégorie (ex: Journal, Sport...)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                  />
+                  <p className="text-xs text-amber-600">Aucune catégorie définie pour Archives. Créez-en dans <strong>Gestion des Catégories</strong> ou saisissez manuellement.</p>
+                </div>
+              )}
+            </div>
 
             <ImageUpload
               label="Miniature"

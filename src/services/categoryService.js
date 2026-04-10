@@ -9,6 +9,7 @@ const SECTIONS = [
   { key: 'sport',          label: 'Sport' },
   { key: 'tele_realite',   label: 'Télé Réalité et Événements' },
   { key: 'missed',         label: 'Contenus Manqués' },
+  { key: 'archive',        label: 'Archives' },
 ];
 
 export { SECTIONS };
