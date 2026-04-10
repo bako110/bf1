@@ -58,7 +58,7 @@ export default function SubscriptionPlans() {
     setSuccess('');
     try {
       await initializeDefaultPlans();
-      setSuccess('Plans d\'abonnement initialisés avec succès!');
+      setSuccess('Plans créés avec succès. Les prix des plans existants n\'ont pas été modifiés.');
       await loadPlans();
     } catch (e) {
       setError('Erreur lors de l\'initialisation: ' + (e.response?.data?.detail || e.message));
@@ -184,6 +184,17 @@ export default function SubscriptionPlans() {
             </Button>
           }
         />
+
+        {/* Explication du système de réductions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <h3 className="text-sm font-bold text-blue-800 mb-2">Système de réductions automatiques</h3>
+          <div className="flex gap-6 text-sm text-blue-700">
+            <span>📅 <strong>1 mois</strong> — Prix plein</span>
+            <span>📅 <strong>3 mois</strong> — −10% (prix barré affiché)</span>
+            <span>📅 <strong>12 mois</strong> — −25% (meilleure offre)</span>
+          </div>
+          <p className="text-xs text-blue-500 mt-2">Les réductions s'appliquent automatiquement à l'initialisation. Vous pouvez ensuite modifier chaque prix manuellement.</p>
+        </div>
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
         {success && <Alert type="success" title="Succès" message={success} onClose={() => setSuccess('')} />}

@@ -458,18 +458,22 @@ export default function Archives() {
               )}
             </div>
 
-            <FormSelect
-              label="Catégorie d'abonnement requise"
-              value={form.required_subscription_category || ''}
-              onChange={e => setForm({...form, required_subscription_category: e.target.value || null})}
-              options={[
-                { value: '', label: 'Gratuit (accès public)' },
-                { value: 'basic', label: 'Basic - Abonnement minimum' },
-                { value: 'standard', label: 'Standard - Abonnement intermédiaire' },
-                { value: 'premium', label: 'Premium - Abonnement complet' }
-              ]}
-              helperText="Définir quel niveau d'abonnement est nécessaire pour accéder à ce contenu"
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Catégorie d'abonnement requise
+              </label>
+              <select
+                value={form.required_subscription_category || ''}
+                onChange={e => setForm({...form, required_subscription_category: e.target.value || null})}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Gratuit (accès public)</option>
+                <option value="basic">Basic - Abonnement minimum</option>
+                <option value="standard">Standard - Abonnement intermédiaire</option>
+                <option value="premium">Premium - Abonnement complet</option>
+              </select>
+              <p className="text-xs text-gray-500">Définir quel niveau d'abonnement est nécessaire pour accéder à ce contenu</p>
+            </div>
 
             <FormInput
               label="Date d'archivage"
