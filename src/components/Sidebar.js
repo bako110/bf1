@@ -19,6 +19,7 @@ const sections = [
   // { label: 'Séries TV', key: 'series' },
   { label: 'Gestion', key: 'submenu_gestion', isHeader: true },
   { label: 'Contrôle Live', key: 'liveControl' },
+  { label: 'Modération Live', key: 'liveModeration' },
   { label: 'Carousel Accueil', key: 'carousel' },
   { label: 'Calendrier', key: 'programs' },
   { label: 'Catégories', key: 'categories' },

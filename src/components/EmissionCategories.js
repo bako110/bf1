@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchEmissionCategories, createEmissionCategory, updateEmissionCategory, deleteEmissionCategory } from '../services/emissionCategoryService';
+import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -8,6 +9,7 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
 import FormTextarea from './ui/FormTextarea';
+import FormSelect from './ui/FormSelect';
 import ImageUpload from './ui/ImageUpload';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
@@ -19,6 +21,7 @@ export default function EmissionCategories() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: '',
+    section: '',
     image_main: '',
     image_background: '',
     image_icon: '',
@@ -30,10 +33,21 @@ export default function EmissionCategories() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [sectionCategories, setSectionCategories] = useState([]);
 
   useEffect(() => {
     loadCategories();
+    loadSectionCategories();
   }, []);
+
+  async function loadSectionCategories() {
+    try {
+      const data = await fetchCategories(null, false);
+      setSectionCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement sous-catégories:', e);
+    }
+  }
 
   async function loadCategories() {
     setLoading(true);
@@ -57,6 +71,7 @@ export default function EmissionCategories() {
     try {
       const categoryData = {
         name: form.name,
+        section: form.section || null,
         image_main: form.image_main || null,
         image_background: form.image_background || null,
         image_icon: form.image_icon || null,
@@ -104,6 +119,7 @@ export default function EmissionCategories() {
   function handleEdit(category) {
     setForm({
       name: category.name || '',
+      section: category.section || '',
       image_main: category.image_main || '',
       image_background: category.image_background || '',
       image_icon: category.image_icon || '',
@@ -120,6 +136,7 @@ export default function EmissionCategories() {
     setEditId(null);
     setForm({
       name: '',
+      section: '',
       image_main: '',
       image_background: '',
       image_icon: '',
@@ -155,8 +172,22 @@ export default function EmissionCategories() {
         </div>
       )
     },
-    { 
-      key: 'is_active', 
+    {
+      key: 'section',
+      label: 'Section',
+      render: (val) => val ? (
+        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">{val}</span>
+      ) : <span className="text-gray-400 text-xs">—</span>
+    },
+    {
+      key: 'filter_path',
+      label: 'Filter Path',
+      render: (val) => val ? (
+        <span className="text-xs text-green-700 font-mono truncate max-w-xs block" title={val}>{val}</span>
+      ) : <span className="text-gray-400 text-xs">—</span>
+    },
+    {
+      key: 'is_active',
       label: 'Statut',
       render: (val) => (
         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -210,12 +241,16 @@ export default function EmissionCategories() {
               </p>
             </div>
 
-            <FormInput
+            <FormSelect
               label="Nom de la Catégorie"
-              placeholder="Sports, JT & Mag, Divertissement, Reportages..."
               value={form.name}
-              onChange={e => setForm({...form, name: e.target.value})}
+              onChange={e => {
+                const selected = sectionCategories.find(cat => cat.name === e.target.value);
+                setForm({ ...form, name: e.target.value, section: selected?.section || '' });
+              }}
+              options={sectionCategories.map(cat => ({ value: cat.name, label: `${cat.name} (${cat.section})` }))}
               required
+              helperText="Sélectionnez parmi les sous-catégories existantes"
             />
 
             {/* Image Principale */}

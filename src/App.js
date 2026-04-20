@@ -33,6 +33,7 @@ import Programs from './components/Programs';
 import SubscriptionPlans from './components/SubscriptionPlans';
 import Archives from './components/Archives';
 import LiveControlScreen from './screens/LiveControlScreen';
+import LiveModeration from './components/LiveModeration';
 import Categories from './components/Categories';
 import Sports from './components/Sports';
 // import Series from './components/Series';
@@ -97,6 +98,7 @@ function App() {
           {section === 'subscriptionPlans' && <SubscriptionPlans />}
           {section === 'archives' && <Archives />}
           {section === 'liveControl' && <LiveControlScreen />}
+          {section === 'liveModeration' && <LiveModeration />}
           {section === 'sports' && <Sports />}
           {section === 'emissionCategories' && <EmissionCategoriesScreen />}
           {section === 'carousel' && <Carousel />}
