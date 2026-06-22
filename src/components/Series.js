@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { seriesService } from '../services/seriesService';
+import { getImageUrl } from '../utils/imageUtils';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -290,7 +291,7 @@ export default function Series() {
       render: (val, item) => (
         <div className="relative">
           <img 
-            src={item.image_url || 'https://via.placeholder.com/80x120/e5e7eb/6b7280?text=S%C3%A9rie'} 
+            src={getImageUrl(item.image_url) || 'https://via.placeholder.com/80x120/e5e7eb/6b7280?text=S%C3%A9rie'}
             alt={item.title || 'Série'}
             className="w-12 h-16 object-cover rounded shadow-sm"
             onError={(e) => {

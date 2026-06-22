@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Button from './Button';
+import { getImageUrl } from '../../utils/imageUtils';
 
 export default function DetailView({ 
   data, 
@@ -31,8 +32,8 @@ export default function DetailView({
         return (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{field.label}</label>
-            <img 
-              src={value} 
+            <img
+              src={getImageUrl(value)}
               alt={field.label}
               className="w-32 h-48 object-cover rounded-lg border border-gray-200"
               onError={(e) => e.target.src = 'https://via.placeholder.com/128x192/e5e7eb/6b7280?text=Image'}
@@ -44,8 +45,8 @@ export default function DetailView({
         return (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">{field.label}</label>
-            <img 
-              src={value} 
+            <img
+              src={getImageUrl(value)}
               alt={field.label}
               className="w-full h-32 object-cover rounded-lg border border-gray-200"
               onError={(e) => e.target.src = 'https://via.placeholder.com/400x128/e5e7eb/6b7280?text=Banner'}

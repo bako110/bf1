@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchNews, createNews, updateNews, deleteNews, uploadNewsImage } from '../services/newsService';
+import { getImageUrl } from '../utils/imageUtils';
 import Drawer from './Drawer';
 import ConfirmModal from './ui/ConfirmModal';
 
@@ -164,7 +165,7 @@ export default function News() {
               {!!form.image && (
                 <div className="mt-3">
                   <img
-                    src={form.image}
+                    src={getImageUrl(form.image)}
                     alt="Aperçu"
                     className="h-24 w-24 object-cover border border-gray-300"
                   />
@@ -248,7 +249,7 @@ export default function News() {
                       <td className="px-6 py-4 text-sm">
                         {n.image ? (
                           <img
-                            src={n.image}
+                            src={getImageUrl(n.image)}
                             alt="Aperçu"
                             className="h-10 w-10 object-cover border border-gray-300"
                           />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { extractErrorMessage } from '../utils/errorUtils';
+import { getImageUrl } from '../utils/imageUtils';
 import { fetchEmissionCategories, createEmissionCategory, updateEmissionCategory, deleteEmissionCategory } from '../services/emissionCategoryService';
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
@@ -165,7 +166,7 @@ export default function EmissionCategories() {
       key: 'image_main', 
       label: 'Image Principale',
       render: (val) => val ? (
-        <img src={val} alt="Main" className="w-20 h-12 object-cover rounded" />
+        <img src={getImageUrl(val)} alt="Main" className="w-20 h-12 object-cover rounded" />
       ) : (
         <div className="w-20 h-12 bg-gray-200 rounded flex items-center justify-center">
           <span className="text-gray-400 text-xs">-</span>

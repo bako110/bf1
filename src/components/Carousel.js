@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
+import { getImageUrl } from '../utils/imageUtils';
 import {
   getCarouselAdmin,
   createCarouselItem,
@@ -108,7 +110,7 @@ export default function Carousel() {
       handleClose();
       loadItems();
     } catch (e) {
-      setError(e?.response?.data?.detail || 'Erreur lors de la sauvegarde.');
+      setError(extractErrorMessage(e, 'Erreur lors de la sauvegarde.'));
     } finally {
       setSubmitting(false);
     }
@@ -139,7 +141,7 @@ export default function Carousel() {
       setSelectedIds([]);
       loadItems();
     } catch (e) {
-      setError(e?.response?.data?.detail || 'Erreur lors de la suppression.');
+      setError(extractErrorMessage(e, 'Erreur lors de la suppression.'));
     } finally {
       setDeleteModalOpen(false);
       setItemToDelete(null);
@@ -157,7 +159,7 @@ export default function Carousel() {
       label: 'Image',
       render: (val) =>
         val ? (
-          <img src={val} alt="slide" className="w-20 h-12 object-cover rounded" />
+          <img src={getImageUrl(val)} alt="slide" className="w-20 h-12 object-cover rounded" />
         ) : (
           <div className="w-20 h-12 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
             Aucune
