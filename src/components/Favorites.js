@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchFavorites, removeFavorite } from '../services/favoritesService';
+import { fetchFavorites } from '../services/favoritesService';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';

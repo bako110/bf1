@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchArchives, createArchive, updateArchive, deleteArchive } from '../services/archiveService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import { fetchCategories } from '../services/categoryService';
@@ -9,7 +10,6 @@ import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
-import FormSelect from './ui/FormSelect';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ImageUpload from './ui/ImageUpload';
@@ -123,7 +123,7 @@ export default function Archives() {
       setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
     } finally {
       setUploadingVideo(false);
       setUploadVideoProgress(0);
@@ -170,7 +170,7 @@ export default function Archives() {
       handleCloseDrawer();
       loadArchives();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

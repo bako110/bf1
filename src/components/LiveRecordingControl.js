@@ -44,6 +44,7 @@ const LiveRecordingControl = ({ streamUrl = 'https://commondatastorage.googleapi
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
+  // eslint-disable-next-line no-unused-vars
   const [recordedVideoBlob, setRecordedVideoBlob] = useState(null);
   const [startTimestamp, setStartTimestamp] = useState(null);
   const recordingDataRef = useRef(null);

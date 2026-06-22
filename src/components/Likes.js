@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchLikes, removeLike } from '../services/likesService';
+import { fetchLikes } from '../services/likesService';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
 import PageHeader from './ui/PageHeader';

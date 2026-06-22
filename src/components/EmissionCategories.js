@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchEmissionCategories, createEmissionCategory, updateEmissionCategory, deleteEmissionCategory } from '../services/emissionCategoryService';
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
@@ -8,7 +9,6 @@ import PageHeader from './ui/PageHeader';
 import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import FormInput from './ui/FormInput';
-import FormTextarea from './ui/FormTextarea';
 import FormSelect from './ui/FormSelect';
 import ImageUpload from './ui/ImageUpload';
 import EmptyState from './ui/EmptyState';
@@ -89,7 +89,7 @@ export default function EmissionCategories() {
       handleCloseDrawer();
       loadCategories();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

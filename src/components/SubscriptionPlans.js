@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { fetchSubscriptionPlans, createSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, initializeDefaultPlans } from '../services/subscriptionPlanService';
+import { extractErrorMessage } from '../utils/errorUtils';
+import { fetchSubscriptionPlans, updateSubscriptionPlan, deleteSubscriptionPlan, initializeDefaultPlans } from '../services/subscriptionPlanService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -13,13 +14,6 @@ const CATEGORIES = [
   { code: 'basic', name: 'Basic', color: 'blue', description: 'Accès premium de base' },
   { code: 'standard', name: 'Standard', color: 'purple', description: 'Accès premium standard' },
   { code: 'premium', name: 'Premium', color: 'yellow', description: 'Accès premium complet' }
-];
-
-// Durées disponibles
-const DURATIONS = [
-  { months: 1, label: '1 mois' },
-  { months: 3, label: '3 mois' },
-  { months: 12, label: '12 mois' }
 ];
 
 export default function SubscriptionPlans() {
@@ -61,7 +55,7 @@ export default function SubscriptionPlans() {
       setSuccess('Plans créés avec succès. Les prix des plans existants n\'ont pas été modifiés.');
       await loadPlans();
     } catch (e) {
-      setError('Erreur lors de l\'initialisation: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de l\'initialisation: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setInitializing(false);
     }
@@ -112,7 +106,7 @@ export default function SubscriptionPlans() {
       handleClose();
       loadPlans();
     } catch (e) {
-      setError('Erreur lors de la mise à jour: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la mise à jour: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

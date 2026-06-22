@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchCategories, createCategory, updateCategory, deleteCategory, SECTIONS } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -32,6 +33,7 @@ export default function Categories() {
 
   useEffect(() => {
     loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterSection]);
 
   async function loadCategories() {
@@ -71,7 +73,7 @@ export default function Categories() {
       handleClose();
       loadCategories();
     } catch (e) {
-      setError('Erreur : ' + (e.response?.data?.detail || e.message));
+      setError('Erreur : ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }
