@@ -10,7 +10,7 @@ const GRAY4  = '#9CA3AF';
 const BORDER = '#E5E7EB';
 
 const TABS = [
-  { key: 'collab',    label: 'Collaborateurs', icon: '◎' },
+  { key: 'collab',    label: 'Administrateurs', icon: '◎' },
   { key: 'profile',   label: 'Mon profil',     icon: '▦' },
   { key: 'password',  label: 'Mot de passe',   icon: '◆' },
   { key: 'account',   label: 'Mon compte',     icon: '◉' },
@@ -103,7 +103,7 @@ function EditModal({ user, onClose, onSaved }) {
     e.preventDefault(); setErr(''); setSaving(true);
     try {
       await adminUpdateUser(user.id, form);
-      onSaved('Collaborateur mis à jour avec succès');
+      onSaved('Administrateur mis à jour avec succès');
     } catch (ex) {
       const d = ex?.response?.data?.detail;
       setErr(typeof d === 'string' ? d : 'Erreur lors de la mise à jour');
@@ -123,7 +123,7 @@ function EditModal({ user, onClose, onSaved }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 3, height: 18, background: RED, borderRadius: 2, display: 'inline-block' }} />
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: GRAY1, margin: 0 }}>Modifier le collaborateur</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: GRAY1, margin: 0 }}>Modifier l'administrateur</h3>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: GRAY3, fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
@@ -166,10 +166,10 @@ function CollabSection() {
     setLoading(true);
     try {
       const data = await fetchUsers(1, 100);
-      // Filtrer : uniquement les collaborateurs (non admin ou is_admin=false)
-      const items = (data.items || data).filter(u => !u.is_admin);
+      // Filtrer : uniquement les admins
+      const items = (data.items || data).filter(u => u.is_admin);
       setUsers(items);
-    } catch { setError('Erreur chargement collaborateurs'); }
+    } catch { setError('Erreur chargement administrateurs'); }
     setLoading(false);
   }, []);
 
@@ -203,8 +203,8 @@ function CollabSection() {
     if (adm.password.length < 6)      { setAdmError('Au moins 6 caractères requis'); return; }
     setSaving(true);
     try {
-      await createUser({ username: adm.username, email: adm.email, password: adm.password, is_admin: false });
-      setAdmSuccess(`Collaborateur "${adm.username}" créé avec succès`);
+      await createUser({ username: adm.username, email: adm.email, password: adm.password, is_admin: true });
+      setAdmSuccess(`Administrateur "${adm.username}" créé avec succès`);
       setAdm({ username: '', email: '', password: '', confirm: '' });
       setShowForm(false);
       load();
@@ -231,7 +231,7 @@ function CollabSection() {
       {/* Bouton ajouter */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <Btn onClick={() => setShowForm(v => !v)}>
-          {showForm ? '− Fermer' : '+ Ajouter un collaborateur'}
+          {showForm ? '− Fermer' : '+ Ajouter un administrateur'}
         </Btn>
       </div>
 
@@ -242,7 +242,7 @@ function CollabSection() {
           borderLeft: `3px solid ${RED}`, borderRadius: 8,
           padding: '20px', marginBottom: 20,
         }}>
-          <h4 style={{ fontSize: 13, fontWeight: 700, color: GRAY1, margin: '0 0 14px' }}>Nouveau collaborateur</h4>
+          <h4 style={{ fontSize: 13, fontWeight: 700, color: GRAY1, margin: '0 0 14px' }}>Nouvel administrateur</h4>
           <Feedback type="error"   message={admError}   onClose={() => setAdmError('')}   />
           <Feedback type="success" message={admSuccess} onClose={() => setAdmSuccess('')} />
           <form onSubmit={handleAdd}>
@@ -251,7 +251,7 @@ function CollabSection() {
                 <Input type="text" required value={adm.username} placeholder="ex: marie_dupont" onChange={e => setAdm({ ...adm, username: e.target.value })} />
               </Field>
               <Field label="Email">
-                <Input type="email" required value={adm.email} placeholder="collab@bf1.tv" onChange={e => setAdm({ ...adm, email: e.target.value })} />
+                <Input type="email" required value={adm.email} placeholder="admin@bf1.tv" onChange={e => setAdm({ ...adm, email: e.target.value })} />
               </Field>
               <Field label="Mot de passe">
                 <Input type="password" required minLength={6} value={adm.password} placeholder="Min. 6 caractères" onChange={e => setAdm({ ...adm, password: e.target.value })} />
@@ -275,7 +275,7 @@ function CollabSection() {
         </div>
       ) : users.length === 0 ? (
         <div style={{ padding: '40px 0', textAlign: 'center', color: GRAY4, fontSize: 13 }}>
-          Aucun collaborateur pour l'instant
+          Aucun administrateur pour l'instant
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -383,7 +383,7 @@ export default function Settings() {
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', padding: 32 }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
-        <PageHeader title="Paramètres" description="Gérer les collaborateurs et votre profil" />
+        <PageHeader title="Paramètres" description="Gérer les administrateurs et votre profil" />
 
         {/* ── Barre d'onglets ──────────────────────────── */}
         <div style={{
