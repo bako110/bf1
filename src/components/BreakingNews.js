@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchBreakingNews, createBreakingNews, updateBreakingNews, deleteBreakingNews, deleteBatchBreakingNews } from '../services/breakingNewsService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -104,7 +105,7 @@ export default function BreakingNews() {
       handleClose();
       loadBreakingNews();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

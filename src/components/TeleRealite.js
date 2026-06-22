@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchTeleRealite, createTeleRealite, updateTeleRealite, deleteTeleRealite, deleteBatchTeleRealite } from '../services/teleRealiteService';
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
@@ -144,7 +145,7 @@ export default function TeleRealite() {
         setUploading(false);
       });
 
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.open('POST', `${process.env.REACT_APP_API_URL || 'http://161.97.117.46:8090/api/v1'}/upload/video`);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.send(formData);
     } catch (err) {
@@ -196,7 +197,7 @@ export default function TeleRealite() {
       handleCloseDrawer();
       loadItems();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

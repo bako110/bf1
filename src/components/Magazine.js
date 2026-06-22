@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchMagazine, createMagazine, updateMagazine, deleteMagazine, deleteBatchMagazine } from '../services/magazineService';
 import { uploadVideo } from '../services/uploadService';
 import Drawer from './Drawer';
@@ -122,7 +123,7 @@ export default function Magazine() {
       setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
       setForm(prev => ({...prev, video_file: null}));
     } finally {
       setUploadingVideo(false);
@@ -164,7 +165,7 @@ export default function Magazine() {
       handleClose();
       loadMagazine();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

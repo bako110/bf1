@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchReels, createReel, updateReel, deleteReel, deleteBatchReels } from '../services/reelService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
@@ -179,7 +180,7 @@ export default function Reels() {
       setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
     } finally {
       setUploadingVideo(false);
       setUploadVideoProgress(0);
@@ -221,7 +222,7 @@ export default function Reels() {
       handleClose();
       loadReels();
     } catch (e) {
-      setError('Erreur: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

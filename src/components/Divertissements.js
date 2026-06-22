@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchDivertissements, createDivertissement, updateDivertissement, deleteDivertissement, deleteBatchDivertissements } from '../services/divertissementService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
@@ -121,7 +122,7 @@ export default function Divertissements() {
       setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
     } finally {
       setUploadingVideo(false);
       setUploadVideoProgress(0);
@@ -166,7 +167,7 @@ export default function Divertissements() {
       handleClose();
       loadDivertissements();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

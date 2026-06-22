@@ -180,14 +180,17 @@ export default function SubscriptionPlans() {
         />
 
         {/* Explication du système de réductions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-          <h3 className="text-sm font-bold text-blue-800 mb-2">Système de réductions automatiques</h3>
-          <div className="flex gap-6 text-sm text-blue-700">
+        <div style={{
+          background: 'rgba(226,62,62,0.05)', border: '1px solid rgba(226,62,62,0.20)',
+          borderLeft: '3px solid #E23E3E', borderRadius: 8, padding: '12px 16px', marginBottom: 20,
+        }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#E23E3E', marginBottom: 6 }}>Système de réductions automatiques</h3>
+          <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#374151', flexWrap: 'wrap' }}>
             <span>📅 <strong>1 mois</strong> — Prix plein</span>
             <span>📅 <strong>3 mois</strong> — −10% (prix barré affiché)</span>
             <span>📅 <strong>12 mois</strong> — −25% (meilleure offre)</span>
           </div>
-          <p className="text-xs text-blue-500 mt-2">Les réductions s'appliquent automatiquement à l'initialisation. Vous pouvez ensuite modifier chaque prix manuellement.</p>
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 6 }}>Les réductions s'appliquent automatiquement à l'initialisation. Vous pouvez ensuite modifier chaque prix manuellement.</p>
         </div>
 
         {error && <Alert type="error" title="Erreur" message={error} onClose={() => setError('')} />}
@@ -211,26 +214,33 @@ export default function SubscriptionPlans() {
           <div className="space-y-8">
             {CATEGORIES.map(category => {
               const categoryData = groupedPlans[category.code];
-              const colorClasses = {
-                blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', badge: 'bg-blue-500' },
-                purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', badge: 'bg-purple-500' },
-                yellow: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', badge: 'bg-yellow-500' }
+              const colorMap = {
+                blue:   { accent: '#3B82F6', bg: 'rgba(59,130,246,0.06)',  border: 'rgba(59,130,246,0.25)'  },
+                purple: { accent: '#9C27B0', bg: 'rgba(156,39,176,0.06)',  border: 'rgba(156,39,176,0.25)'  },
+                yellow: { accent: '#FF6F00', bg: 'rgba(255,111,0,0.06)',   border: 'rgba(255,111,0,0.25)'   },
               };
-              const colors = colorClasses[category.color];
+              const cm = colorMap[category.color] ?? colorMap.blue;
 
               return (
-                <div key={category.code} className={`bg-white rounded-xl shadow-md overflow-hidden border-2 ${colors.border}`}>
-                  <div className={`${colors.bg} px-6 py-4 border-b ${colors.border}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${colors.badge}`}></div>
-                        <h3 className={`text-xl font-bold ${colors.text}`}>{category.name}</h3>
-                        <span className="text-sm text-gray-600">({category.description})</span>
-                      </div>
-                      <span className="text-sm font-medium text-gray-500">
-                        {categoryData.plans.length} durée{categoryData.plans.length > 1 ? 's' : ''}
-                      </span>
+                <div key={category.code} style={{
+                  background: '#fff', borderRadius: 12,
+                  border: `1.5px solid ${cm.border}`,
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                }}>
+                  <div style={{
+                    background: cm.bg, padding: '14px 20px',
+                    borderBottom: `1px solid ${cm.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: cm.accent, display: 'inline-block' }} />
+                      <h3 style={{ fontSize: 16, fontWeight: 700, color: cm.accent, margin: 0 }}>{category.name}</h3>
+                      <span style={{ fontSize: 13, color: '#6B7280' }}>— {category.description}</span>
                     </div>
+                    <span style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 600 }}>
+                      {categoryData.plans.length} durée{categoryData.plans.length > 1 ? 's' : ''}
+                    </span>
                   </div>
 
                   <div className="p-6">
@@ -302,7 +312,13 @@ export default function SubscriptionPlans() {
                             <div className="flex gap-2 mt-4">
                               <button
                                 onClick={() => handleUpdatePrice(plan)}
-                                className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                                style={{
+                                  flex: 1, padding: '7px 12px', fontSize: 12, fontWeight: 600,
+                                  background: '#E23E3E', color: '#fff', border: 'none',
+                                  borderRadius: 6, cursor: 'pointer',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#C93535'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#E23E3E'; }}
                               >
                                 Modifier Prix
                               </button>
@@ -328,16 +344,13 @@ export default function SubscriptionPlans() {
       {/* Drawer pour modifier le prix */}
       <Drawer isOpen={isDrawerOpen} onClose={handleClose} title={`Modifier le Prix - ${editingPlan?.name}`}>
         <form onSubmit={handleSubmitPrice} className="space-y-6">
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Plan:</strong> {editingPlan?.name}
-            </p>
-            <p className="text-sm text-blue-800 mt-1">
-              <strong>Durée:</strong> {editingPlan?.duration_months} mois
-            </p>
-            <p className="text-sm text-blue-800 mt-1">
-              <strong>Prix actuel:</strong> {editingPlan && formatPrice(editingPlan.price_cents)}
-            </p>
+          <div style={{
+            background: 'rgba(226,62,62,0.05)', borderLeft: '3px solid #E23E3E',
+            borderRadius: 6, padding: '12px 14px',
+          }}>
+            <p style={{ fontSize: 13, color: '#374151', margin: 0 }}><strong>Plan :</strong> {editingPlan?.name}</p>
+            <p style={{ fontSize: 13, color: '#374151', margin: '4px 0 0' }}><strong>Durée :</strong> {editingPlan?.duration_months} mois</p>
+            <p style={{ fontSize: 13, color: '#374151', margin: '4px 0 0' }}><strong>Prix actuel :</strong> {editingPlan && formatPrice(editingPlan.price_cents)}</p>
           </div>
 
           <FormInput

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchReportages, createReportage, updateReportage, deleteReportage, deleteBatchReportages } from '../services/reportageService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -159,7 +160,7 @@ export default function Reportages() {
         setUploading(false);
       });
       
-      xhr.open('POST', 'http://localhost:8000/api/v1/upload/video');
+      xhr.open('POST', `${process.env.REACT_APP_API_URL || 'http://161.97.117.46:8090/api/v1'}/upload/video`);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.send(formData);
       
@@ -215,7 +216,7 @@ export default function Reportages() {
       handleCloseDrawer();
       loadReportages();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

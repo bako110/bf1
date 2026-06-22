@@ -29,3 +29,18 @@ export async function getCurrentUser() {
   const res = await api.get('/users/me');
   return res.data;
 }
+
+export async function banUser(id) {
+  const res = await api.patch(`/users/${id}/ban`);
+  return res.data;
+}
+
+export async function unbanUser(id) {
+  const res = await api.patch(`/users/${id}/unban`);
+  return res.data;
+}
+
+export async function adminUpdateUser(id, data) {
+  const res = await api.patch(`/users/${id}`, data);
+  return res.data;
+}

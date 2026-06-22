@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchMovies, createMovie, updateMovie, deleteMovie, deleteBatchMovies } from '../services/movieService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
@@ -116,7 +117,7 @@ export default function Movies() {
       }
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
     } finally {
       setUploadingVideo(false);
       setUploadVideoProgress(0);
@@ -163,7 +164,7 @@ export default function Movies() {
       handleCloseDrawer();
       loadMovies();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

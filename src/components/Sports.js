@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { sportService } from '../services/sportService';
-import { uploadVideo } from '../services/uploadService'; // Correction: utilisation du bon service
+import { uploadVideo } from '../services/uploadService';
+import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
 import Alert from './ui/Alert';
@@ -9,6 +11,7 @@ import DataTable from './ui/DataTable';
 import Button from './ui/Button';
 import ImageUpload from './ui/ImageUpload';
 import FormInput from './ui/FormInput';
+import FormSelect from './ui/FormSelect';
 import FormTextarea from './ui/FormTextarea';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
@@ -17,6 +20,7 @@ import Pagination from './ui/Pagination';
 
 export default function Sports() {
   const [sports, setSports] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -57,7 +61,17 @@ export default function Sports() {
 
   useEffect(() => {
     loadSports();
+    loadCategories();
   }, []);
+
+  async function loadCategories() {
+    try {
+      const data = await fetchCategories('sport', false);
+      setCategories(data || []);
+    } catch (e) {
+      console.error('Erreur chargement catégories sport:', e);
+    }
+  }
 
   const loadSports = async (page = 1) => {
     try {
@@ -70,13 +84,7 @@ export default function Sports() {
       setTotalPages(Math.ceil((data.total || 0) / itemsPerPage) || 1);
       setCurrentPage(page);
     } catch (error) {
-      let errorMessage = 'Erreur lors du chargement des sports.';
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      setError(errorMessage);
+      setError(extractErrorMessage(error, 'Erreur lors du chargement des sports.'));
     } finally {
       setLoading(false);
       setPaginationLoading(false);
@@ -101,7 +109,7 @@ export default function Sports() {
       setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
       setForm(prev => ({...prev, video_file: null}));
     } finally {
       setUploadingVideo(false);
@@ -158,11 +166,7 @@ export default function Sports() {
       loadSports();
     } catch (e) {
       console.error('Erreur détaillée:', e.response?.data);
-      const errorMessage = e.response?.data?.detail || 
-                          e.response?.data?.message || 
-                          e.message || 
-                          'Erreur lors de la sauvegarde';
-      setError('Erreur: ' + errorMessage);
+      setError('Erreur: ' + extractErrorMessage(e, 'Erreur lors de la sauvegarde'));
     } finally {
       setSubmitting(false);
     }
@@ -402,15 +406,15 @@ export default function Sports() {
               rows={4} 
             />
 
-            {/* Champs spécifiques au sport */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormInput 
-                label="Type de sport" 
-                placeholder="Ex: Football, Basket, Tennis..." 
-                value={form.sport_type} 
-                onChange={e => setForm({...form, sport_type: e.target.value})} 
-              />
-            </div>
+            {/* Catégorie */}
+            <FormSelect
+              label="Catégorie"
+              value={form.sport_type}
+              onChange={e => setForm({...form, sport_type: e.target.value})}
+              options={categories.map(cat => ({ value: cat.name, label: cat.name }))}
+              required
+              helperText="Sélectionnez une catégorie ou créez-en une dans la section Catégories"
+            />
 
             {/* Upload Image */}
             <ImageUpload

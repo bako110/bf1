@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchPrograms, createProgram, updateProgram, deleteProgram, deleteBatchPrograms } from '../services/programService';
 import { fetchCategories } from '../services/categoryService';
 import Drawer from './Drawer';
@@ -112,7 +113,7 @@ export default function Programs() {
       handleClose();
       loadPrograms();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

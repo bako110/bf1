@@ -1,126 +1,159 @@
 import React from 'react';
 
-export default function Pagination({ 
-  currentPage, 
-  totalPages, 
-  onPageChange, 
-  hasNextPage, 
+const RED    = '#E23E3E';
+const GRAY1  = '#111827';
+const GRAY3  = '#6B7280';
+const GRAY4  = '#9CA3AF';
+const BORDER = '#E5E7EB';
+
+function ChevronLeft() {
+  return (
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+function ChevronRight() {
+  return (
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+export default function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+  hasNextPage,
   hasPrevPage,
   loading = false,
   itemsPerPage = 20,
-  totalItems
+  totalItems,
 }) {
-  const handlePrev = () => {
-    if (hasPrevPage && !loading) {
-      onPageChange(currentPage - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (hasNextPage && !loading) {
-      onPageChange(currentPage + 1);
-    }
-  };
-
-  const handlePageClick = (page) => {
-    if (page !== currentPage && !loading) {
-      onPageChange(page);
-    }
-  };
-
-  // Calculer les pages à afficher
   const getVisiblePages = () => {
     const pages = [];
     const maxVisible = 5;
-    
     if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const start = Math.max(1, currentPage - 2);
-      const end = Math.min(totalPages, start + maxVisible - 1);
-      
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
+      const end   = Math.min(totalPages, start + maxVisible - 1);
+      for (let i = start; i <= end; i++) pages.push(i);
     }
-    
     return pages;
   };
 
-  return (
-    <div className="flex flex-col items-center space-y-4 py-6">
-      {/* Informations */}
-      <div className="text-sm text-gray-600">
-        {totalItems && (
-          <span>
-            Affichage de {((currentPage - 1) * itemsPerPage) + 1} à{' '}
-            {Math.min(currentPage * itemsPerPage, totalItems)} sur {totalItems} éléments
-          </span>
-        )}
-      </div>
+  const from = ((currentPage - 1) * itemsPerPage) + 1;
+  const to   = Math.min(currentPage * itemsPerPage, totalItems ?? 0);
 
-      {/* Contrôles de pagination */}
-      <div className="flex items-center space-x-2">
-        {/* Bouton précédent */}
+  const btnBase = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    gap: 4, height: 34, padding: '0 12px',
+    fontSize: 13, fontWeight: 500,
+    border: `1px solid ${BORDER}`,
+    borderRadius: 7, cursor: 'pointer',
+    transition: 'all 0.15s', background: '#fff',
+    outline: 'none',
+  };
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+      padding: '20px 0 8px',
+    }}>
+
+      {/* Compteur */}
+      {totalItems > 0 && (
+        <p style={{ fontSize: 12, color: GRAY3, margin: 0 }}>
+          <span style={{ fontWeight: 600, color: GRAY1 }}>{from}–{to}</span>
+          {' '}sur{' '}
+          <span style={{ fontWeight: 600, color: GRAY1 }}>{totalItems}</span>
+          {' '}éléments
+        </p>
+      )}
+
+      {/* Contrôles */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+
+        {/* Précédent */}
         <button
-          onClick={handlePrev}
+          onClick={() => hasPrevPage && !loading && onPageChange(currentPage - 1)}
           disabled={!hasPrevPage || loading}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            hasPrevPage && !loading
-              ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
+          style={{
+            ...btnBase,
+            color: hasPrevPage && !loading ? GRAY1 : GRAY4,
+            background: hasPrevPage && !loading ? '#fff' : '#F9FAFB',
+            borderColor: hasPrevPage && !loading ? BORDER : '#F3F4F6',
+            cursor: hasPrevPage && !loading ? 'pointer' : 'not-allowed',
+          }}
+          onMouseEnter={e => { if (hasPrevPage && !loading) { e.currentTarget.style.borderColor = RED; e.currentTarget.style.color = RED; } }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = hasPrevPage ? GRAY1 : GRAY4; }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Précédent
+          <ChevronLeft />
+          <span>Précédent</span>
         </button>
 
-        {/* Numéros de page */}
-        <div className="flex items-center space-x-1">
-          {getVisiblePages().map((page, index) => (
+        {/* Numéros */}
+        {getVisiblePages().map(page => {
+          const active = page === currentPage;
+          return (
             <button
               key={page}
-              onClick={() => handlePageClick(page)}
+              onClick={() => !loading && onPageChange(page)}
               disabled={loading}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                page === currentPage
-                  ? 'bg-black text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+              style={{
+                ...btnBase,
+                width: 34, padding: 0,
+                fontWeight: active ? 700 : 500,
+                background: active ? RED : '#fff',
+                color:      active ? '#fff' : GRAY1,
+                borderColor: active ? RED : BORDER,
+                boxShadow: active ? `0 2px 8px rgba(226,62,62,0.30)` : 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+              onMouseEnter={e => { if (!active && !loading) { e.currentTarget.style.borderColor = RED; e.currentTarget.style.color = RED; } }}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = GRAY1; } }}
             >
               {page}
             </button>
-          ))}
-        </div>
+          );
+        })}
 
-        {/* Bouton suivant */}
+        {/* Suivant */}
         <button
-          onClick={handleNext}
+          onClick={() => hasNextPage && !loading && onPageChange(currentPage + 1)}
           disabled={!hasNextPage || loading}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            hasNextPage && !loading
-              ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
+          style={{
+            ...btnBase,
+            color: hasNextPage && !loading ? GRAY1 : GRAY4,
+            background: hasNextPage && !loading ? '#fff' : '#F9FAFB',
+            borderColor: hasNextPage && !loading ? BORDER : '#F3F4F6',
+            cursor: hasNextPage && !loading ? 'pointer' : 'not-allowed',
+          }}
+          onMouseEnter={e => { if (hasNextPage && !loading) { e.currentTarget.style.borderColor = RED; e.currentTarget.style.color = RED; } }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = hasNextPage ? GRAY1 : GRAY4; }}
         >
-          Suivant
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <span>Suivant</span>
+          <ChevronRight />
         </button>
       </div>
 
-      {/* Indicateur de chargement */}
+      {/* Spinner chargement */}
       {loading && (
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: GRAY3 }}>
+          <div style={{
+            width: 14, height: 14,
+            border: `2px solid ${BORDER}`,
+            borderTopColor: RED,
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
           <span>Chargement...</span>
         </div>
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

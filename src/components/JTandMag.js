@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { fetchJTandMag, createJTandMag, updateJTandMag, deleteJTandMag, deleteBatchJTandMag } from '../services/jtandmagService';
 import { uploadVideo } from '../services/uploadService'; // Service d'upload vidéo
 import Drawer from './Drawer';
@@ -124,7 +125,7 @@ export default function JTandMag() {
       setForm(prev => ({...prev, video_url: videoUrl}));
       
     } catch (err) {
-      setError('Erreur upload vidéo: ' + (err.response?.data?.detail || err.message));
+      setError('Erreur upload vidéo: ' + extractErrorMessage(err, 'Erreur upload vidéo'));
       setForm(prev => ({...prev, video_file: null}));
     } finally {
       setUploadingVideo(false);
@@ -166,7 +167,7 @@ export default function JTandMag() {
       handleClose();
       loadJTandMag();
     } catch (e) {
-      setError('Erreur lors de la sauvegarde: ' + (e.response?.data?.detail || e.message));
+      setError('Erreur lors de la sauvegarde: ' + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

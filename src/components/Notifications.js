@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { extractErrorMessage } from '../utils/errorUtils';
 import api from '../config/api';
 import Drawer from './Drawer';
 import Loader from './ui/Loader';
@@ -102,7 +103,7 @@ export default function Notifications() {
       handleClose();
       loadNotifications();
     } catch (e) {
-      setError("Erreur : " + (e.response?.data?.detail || e.message));
+      setError("Erreur : " + extractErrorMessage(e, 'Erreur inconnue'));
     } finally {
       setSubmitting(false);
     }

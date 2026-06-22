@@ -39,7 +39,6 @@ import Sports from './components/Sports';
 // import Series from './components/Series';
 import TeleRealite from './components/TeleRealite';
 import EmissionCategoriesScreen from './screens/EmissionCategoriesScreen';
-import Carousel from './components/Carousel';
 import MissedScreen from './screens/MissedScreen';
 
 function App() {
@@ -70,11 +69,11 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
       <Sidebar currentSection={section} onSectionChange={setSection} onLogout={handleLogout} />
-      <div className="flex-1 ml-64">
+      <div style={{ flex: 1, marginLeft: 256 }}>
         <Header onLogout={handleLogout} onSectionChange={setSection} />
-        <main className="mt-16 p-6">
+        <main style={{ marginTop: 64, padding: 0 }}>
           {section === 'dashboard' && <Dashboard onNavigate={setSection} />}
           {section === 'users' && <UsersScreen />}
           {section === 'teleRealite' && <TeleRealite />}
@@ -101,7 +100,6 @@ function App() {
           {section === 'liveModeration' && <LiveModeration />}
           {section === 'sports' && <Sports />}
           {section === 'emissionCategories' && <EmissionCategoriesScreen />}
-          {section === 'carousel' && <Carousel />}
           {section === 'missed' && <MissedScreen />}
           {/* {section === 'premium' && <Premium />} */}
           {/* {section === 'uploads' && <Uploads />} */}
