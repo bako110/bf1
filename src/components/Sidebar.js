@@ -1,5 +1,6 @@
 import React from 'react';
 import { logoutAdmin } from '../services/authService';
+import logo from '../assets/logo.png';
 
 const sections = [
   { label: 'Dashboard',               key: 'dashboard',         icon: '▦' },
@@ -51,6 +52,7 @@ export default function Sidebar({ currentSection, onSectionChange, onLogout }) {
       position: 'fixed', left: 0, top: 0,
       background: 'linear-gradient(180deg, #7a1a1a 0%, #5c1212 100%)',
       boxShadow: '4px 0 16px rgba(0,0,0,0.18)',
+      scrollbarWidth: 'none', msOverflowStyle: 'none',
     }}>
 
       {/* ── Logo ─────────────────────────────────────────── */}
@@ -61,7 +63,7 @@ export default function Sidebar({ currentSection, onSectionChange, onLogout }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
       }}>
         <img
-          src="/logo.png"
+          src={logo}
           alt="BF1"
           style={{ width: 56, height: 56, objectFit: 'contain' }}
         />
@@ -72,7 +74,7 @@ export default function Sidebar({ currentSection, onSectionChange, onLogout }) {
       </div>
 
       {/* ── Navigation ───────────────────────────────────── */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+      <nav className="sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '8px 0', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {sections.map((s) => {
             if (s.isHeader) {
